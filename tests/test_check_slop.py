@@ -17,7 +17,7 @@ def write(directory: Path, name: str, text: str) -> Path:
 
 
 def rule_ids(directory: Path) -> set[str]:
-    return {finding.rule_id for finding in scan([directory]).findings}
+    return {finding.rule.rule_id for finding in scan([directory]).findings}
 
 
 LINE_RULE_CASES = [
@@ -75,7 +75,7 @@ LINE_RULE_CASES = [
         "default-font",
         "a.tsx",
         "import { Inter } from 'next/font/google'",
-        "<p>Interactive tools</p>",
+        "body { font-family: 'Interstate', sans-serif; }",
     ),
     (
         "default-font",
@@ -127,6 +127,52 @@ LINE_RULE_CASES = [
     (
         "uppercase-label",
         "a.html",
+        '<p class="eyebrow">New</p>',
+        '<a class="overline">Read more</a>',
+    ),
+    ("default-font", "a.ts", "import '@fontsource/inter';", "import '@fontsource/fraunces';"),
+    (
+        "default-font",
+        "a.css",
+        "body { font-family: inter, sans-serif; }",
+        "body { font-family: newsreader, serif; }",
+    ),
+    ("transition-all", "a.tsx", "style={{ transition: 'all 0.3s' }}", "style={{ opacity: 0 }}"),
+    ("scale-zero", "a.css", ".a { scale: 0; }", ".a { scale: 0.95; }"),
+    ("scale-zero", "a.tsx", "    scale: 0", "    scale: 0.9"),
+    (
+        "zoom-disabled",
+        "a.tsx",
+        "export const viewport = { maximumScale: 1, userScalable: false }",
+        "export const viewport = { width: 'device-width', initialScale: 1 }",
+    ),
+    (
+        "layout-transition",
+        "a.css",
+        ".a { transition: grid-template-rows 0.3s; }",
+        ".a { transition: border-left-color 0.2s; }",
+    ),
+    (
+        "layout-transition",
+        "a.tsx",
+        "style={{ transition: 'height .2s' }}",
+        "style={{ transition: 'opacity .2s', width: '100%' }}",
+    ),
+    (
+        "glow-shadow",
+        "a.html",
+        '<div class="shadow-xl shadow-violet-500/40">',
+        '<div class="shadow-lg shadow-stone-900/10">',
+    ),
+    (
+        "accent-word",
+        "a.tsx",
+        '<h1>Sourdough <span className="font-serif italic">every</span> Friday</h1>',
+        '<h2><i class="fa fa-star"></i> Features</h2>',
+    ),
+    (
+        "uppercase-label",
+        "a.html",
         '<p class="uppercase tracking-widest text-xs">Features</p>',
         '<p class="text-sm">Features</p>',
     ),
@@ -153,7 +199,7 @@ def test_line_rule_ignores_the_near_miss(
 
 def test_findings_carry_line_numbers(tmp_path: Path) -> None:
     write(tmp_path, "a.css", ".a {}\n.b { transition: all 1s; }\n")
-    [finding] = [f for f in scan([tmp_path]).findings if f.rule_id == "transition-all"]
+    [finding] = [f for f in scan([tmp_path]).findings if f.rule.rule_id == "transition-all"]
     assert finding.line == 2
 
 
@@ -196,7 +242,7 @@ def test_colour_only_transition_needs_no_reduced_motion(tmp_path: Path) -> None:
 
 def test_missing_reduced_motion_is_reported_once(tmp_path: Path) -> None:
     write(tmp_path, "a.css", "@keyframes a {}\n@keyframes b {}\n")
-    findings = [f for f in scan([tmp_path]).findings if f.rule_id == "no-reduced-motion"]
+    findings = [f for f in scan([tmp_path]).findings if f.rule.rule_id == "no-reduced-motion"]
     assert len(findings) == 1
 
 
@@ -309,3 +355,74 @@ def test_broken_symlinks_are_ignored(tmp_path: Path) -> None:
     except OSError:
         pytest.skip("this platform does not allow creating symlinks here")
     assert scan([tmp_path]).files_scanned == 0
+
+
+def test_partial_outline_width_is_not_removal(tmp_path: Path) -> None:
+    write(tmp_path, "a.css", ".a { outline: 0.5px solid red; }")
+    assert "focus-removed" not in rule_ids(tmp_path)
+
+
+def test_tailwind_focus_ring_replaces_removed_outline(tmp_path: Path) -> None:
+    write(tmp_path, "a.html", '<button class="focus:outline-none focus:ring-2">')
+    assert "focus-removed" not in rule_ids(tmp_path)
+
+
+def test_box_shadow_ring_on_the_same_rule_replaces_removed_outline(tmp_path: Path) -> None:
+    write(tmp_path, "a.css", "button:focus { outline: none; box-shadow: 0 0 0 3px var(--ring); }")
+    assert "focus-removed" not in rule_ids(tmp_path)
+
+
+def test_animation_none_is_not_motion(tmp_path: Path) -> None:
+    write(tmp_path, "a.css", ".a { animation: none; }")
+    assert "no-reduced-motion" not in rule_ids(tmp_path)
+
+
+def test_transform_transition_is_motion(tmp_path: Path) -> None:
+    write(tmp_path, "a.css", ".card { transition: transform 200ms ease-out; }")
+    assert "no-reduced-motion" in rule_ids(tmp_path)
+
+
+def test_one_glass_header_with_prefix_and_fallback_counts_once(tmp_path: Path) -> None:
+    write(
+        tmp_path,
+        "a.css",
+        ".h {\n  backdrop-filter: blur(12px);\n  -webkit-backdrop-filter: blur(12px);\n}\n"
+        "@supports not (backdrop-filter: blur(1px)) { .h { background: white; } }\n"
+        ".menu { backdrop-filter: blur(8px); }\n",
+    )
+    assert "glass-everywhere" not in rule_ids(tmp_path)
+
+
+def test_overlapping_paths_scan_each_file_once(tmp_path: Path) -> None:
+    path = write(tmp_path, "a.css", ".a { transition: all 1s; }")
+    result = scan([tmp_path, path])
+    assert result.files_scanned == 1
+    assert len(result.findings) == 1
+
+
+def test_a_named_file_is_scanned_whatever_its_suffix(tmp_path: Path) -> None:
+    path = write(tmp_path, "page.php", '<div class="transition-all">')
+    assert scan([path]).files_scanned == 1
+
+
+def test_commonjs_and_typescript_module_suffixes_are_scanned(tmp_path: Path) -> None:
+    for name in ("a.cjs", "b.mts", "c.cts"):
+        write(tmp_path, name, "")
+    assert scan([tmp_path]).files_scanned == 3
+
+
+def test_unreadable_files_are_reported_not_fatal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    locked = write(tmp_path, "locked.css", ".a { transition: all 1s; }")
+    real_read_bytes = Path.read_bytes
+
+    def read_bytes(self: Path) -> bytes:
+        if self == locked:
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    assert scan([tmp_path]).unreadable == [locked]
+    assert main([str(tmp_path)]) == 0
+    assert "Could not read" in capsys.readouterr().out

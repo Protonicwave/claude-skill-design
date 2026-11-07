@@ -3,14 +3,19 @@
 Usage:
     python check_slop.py PATH [PATH ...]
 
-PATH is a file or a directory. Directories are walked, skipping dependency
-and build output folders. Defects break accessibility or feel and make the
-exit code 1. Tells are patterns typical of generated UI: each one should be
-changed or kept with a stated reason, and they do not affect the exit code.
-Exit code 2 means a path could not be found.
+PATH is a file or a directory. Directories are walked for front-end file
+types, skipping dependency and build output folders; a file named directly is
+always scanned. Defects break accessibility or feel and make the exit code 1.
+Tells are patterns typical of generated UI: each one should be changed or kept
+with a stated reason, and they do not affect the exit code. Exit code 2 means
+a path could not be found.
 
-The scan reads text, not rendered pages, so it cannot judge contrast, layout
-or motion as experienced. Check those in a browser.
+Focus and reduced-motion rules look for a satisfying style anywhere in the
+scan, so pass the whole front-end source rather than only the files changed.
+
+Limits: rules read one line at a time, so a declaration or element split over
+several lines can be missed. The scan reads text, not rendered pages, so it
+cannot judge contrast, layout or motion as experienced.
 """
 
 from __future__ import annotations
@@ -32,7 +37,7 @@ MAX_BLUR_SURFACES = 3
 
 SCANNED_SUFFIXES = frozenset(
     {".html", ".htm", ".css", ".scss", ".sass", ".less", ".js", ".jsx", ".ts", ".tsx"}
-    | {".mjs", ".vue", ".svelte", ".astro", ".mdx"}
+    | {".mjs", ".cjs", ".mts", ".cts", ".vue", ".svelte", ".astro", ".mdx"}
 )
 SKIPPED_DIRS = frozenset(
     {"node_modules", ".git", "dist", "build", "out", ".next", ".nuxt", ".svelte-kit"}
@@ -63,10 +68,7 @@ class LineRule:
 class Finding:
     path: Path
     line: int
-    rule_id: str
-    severity: Severity
-    message: str
-    fix: str
+    rule: Rule
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,16 +78,25 @@ class SourceFile:
 
 
 @dataclass(slots=True)
-class ScanResult:
-    findings: list[Finding] = field(default_factory=list)
+class Collection:
+    sources: list[SourceFile] = field(default_factory=list)
     skipped: list[Path] = field(default_factory=list)
-    files_scanned: int = 0
+    unreadable: list[Path] = field(default_factory=list)
     truncated: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class ScanResult:
+    findings: list[Finding]
+    files_scanned: int
+    skipped: list[Path]
+    unreadable: list[Path]
+    truncated: bool
+
+
 DEFAULT_FONTS = (
-    r"Inter|Roboto|Open[ +_]Sans|Lato|Poppins|Montserrat|Space[ +_]Grotesk"
-    r"|Instrument[ +_]Serif|Geist"
+    r"inter|roboto|open[ +_-]sans|lato|poppins|montserrat|space[ +_-]grotesk"
+    r"|instrument[ +_-]serif|playfair[ +_-]display|geist(?![ +_-]mono)"
 )
 FONT_CONTEXT = r"font-family|fontFamily|fonts\.googleapis\.com|@fontsource|next/font|--font"
 FILLER_PHRASES = (
@@ -93,8 +104,15 @@ FILLER_PHRASES = (
     r"|revolutioni[sz]e|next-generation|game[- ]chang|effortless(?:ly)?|elevate your"
     r"|all-in-one platform|cutting-edge|empower your"
 )
-EMOJI = "[\U0001f300-\U0001faff✨⚡✅⭐]"
-LAYOUT_PROPERTIES = r"width|height|top|left|right|bottom|inset|margin[\w-]*|padding[\w-]*"
+EMOJI = "[\U0001f300-\U0001faff\u2728\u26a1\u2705\u2b50]"
+LAYOUT_PROPERTIES = (
+    r"(?:max-|min-)?(?:width|height)|top|left|right|bottom|inset(?:-[a-z-]+)?"
+    r"|margin(?:-[a-z-]+)?|padding(?:-[a-z-]+)?|grid-template-(?:rows|columns)"
+)
+SATURATED_HUES = (
+    r"red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple"
+    r"|fuchsia|pink|rose"
+)
 
 LINE_RULES: tuple[LineRule, ...] = (
     LineRule(
@@ -104,7 +122,7 @@ LINE_RULES: tuple[LineRule, ...] = (
             "transitions every property, including layout ones and any added later",
             "list the properties, usually opacity and transform",
         ),
-        re.compile(r"transition(?:-property)?\s*:\s*all\b|\btransition-all\b"),
+        re.compile(r"transition(?:-property)?\s*:\s*['\"`]?all\b|\btransition-all\b"),
     ),
     LineRule(
         Rule(
@@ -113,25 +131,31 @@ LINE_RULES: tuple[LineRule, ...] = (
             "animating from scale 0 looks like popping out of nowhere",
             "start from scale 0.9 to 0.97 with opacity 0",
         ),
-        re.compile(r"scale\(\s*0(?:\.0+)?\s*\)|\bscale:\s*0\s*[,}]|\bscale-0\b"),
+        re.compile(r"scale\(\s*0(?:\.0+)?\s*\)|\bscale\s*:\s*0(?:\.0+)?\s*(?:[,;}]|$)|\bscale-0\b"),
     ),
     LineRule(
         Rule(
             "zoom-disabled",
             Severity.DEFECT,
             "the viewport blocks pinch zoom, which fails people who need to enlarge text",
-            "remove user-scalable and maximum-scale from the viewport meta tag",
+            "remove the user-scalable and maximum-scale settings from the viewport",
         ),
-        re.compile(r"user-scalable\s*=\s*(?:no|0)\b|maximum-scale\s*=\s*1(?:\.0+)?(?![\d.])"),
+        re.compile(
+            r"user-scalable\s*=\s*(?:no|0)\b|maximum-scale\s*=\s*1(?:\.0+)?(?![\d.])"
+            r"|maximumScale\s*:\s*1(?![\d.])|userScalable\s*:\s*(?:false|['\"]no['\"])"
+        ),
     ),
     LineRule(
         Rule(
             "layout-transition",
             Severity.DEFECT,
             "transitioning a layout property forces layout on every frame and shifts content",
-            "animate transform and opacity instead, or use a grid-rows or View Transition",
+            "animate transform and opacity instead, or use a View Transition",
         ),
-        re.compile(rf"transition(?:-property)?\s*:[^;{{}}]*\b(?:{LAYOUT_PROPERTIES})\b"),
+        re.compile(
+            r"transition(?:-property)?\s*:\s*['\"`]?[^;{}'\"`]*?"
+            rf"(?<![\w-])(?:{LAYOUT_PROPERTIES})(?![\w-])"
+        ),
     ),
     LineRule(
         Rule(
@@ -163,18 +187,18 @@ LINE_RULES: tuple[LineRule, ...] = (
             "this typeface is a default or second-wave default of generated UI",
             "choose a family for the subject's voice, or state why this one fits",
         ),
-        re.compile(rf"^(?=.*(?:{FONT_CONTEXT}))(?=.*\b(?:{DEFAULT_FONTS})\b)"),
+        re.compile(rf"^(?=.*(?:{FONT_CONTEXT}))(?=.*\b(?:{DEFAULT_FONTS})\b)", re.IGNORECASE),
     ),
     LineRule(
         Rule(
             "glow-shadow",
             Severity.TELL,
-            "a zero-offset coloured glow models no light source",
+            "a coloured glow shadow models no light source",
             "use tone steps or a layered neutral shadow from one light direction",
         ),
         re.compile(
             r"box-shadow\s*:\s*0(?:px)?\s+0(?:px)?\s+(?:[2-9]\d|\d{3,})px"
-            r"|\bshadow-(?!(?:sm|md|lg|xl|2xl|inner|none)\b)[a-z]+-\d{2,3}(?:/\d+)?\b"
+            rf"|\bshadow-(?:{SATURATED_HUES})-\d{{2,3}}(?:/\d+)?\b"
         ),
     ),
     LineRule(
@@ -214,7 +238,7 @@ LINE_RULES: tuple[LineRule, ...] = (
         re.compile(
             r"\buppercase\b[^\"'\n]*\btracking-(?:wide|wider|widest)\b"
             r"|\btracking-(?:wide|wider|widest)\b[^\"'\n]*\buppercase\b"
-            r"|class(?:Name)?=[\"'][^\"']*\b(?:eyebrow|kicker|overline)\b"
+            r"|class(?:Name)?=[\"'][^\"']*\b(?:eyebrow|kicker)\b"
         ),
     ),
     LineRule(
@@ -224,7 +248,7 @@ LINE_RULES: tuple[LineRule, ...] = (
             "an italic accent word inside a heading is a fast-spreading generated tell",
             "let the whole heading carry the voice through size, weight and setting",
         ),
-        re.compile(r"<h[1-6]\b[^>]*>[^<]*<(?:em|i)\b"),
+        re.compile(r"<h[1-6]\b[^>]*>[^<]*<(?:em\b|i>|span\b[^>]*\bitalic\b)"),
     ),
 )
 
@@ -247,25 +271,32 @@ GLASS_EVERYWHERE = Rule(
     "keep glass for the one surface content scrolls under, if any",
 )
 
-OUTLINE_REMOVED_PATTERN = re.compile(r"outline\s*:\s*(?:none|0)\b|\boutline-none\b")
+# A line that removes the outline but adds a ring or shadow replaces it rather than removing it.
+OUTLINE_REMOVED_PATTERN = re.compile(
+    r"^(?!.*(?:box-shadow|\bring-))(?=.*(?:outline\s*:\s*(?:none|0)(?![\w.])|\boutline-none\b))"
+)
 FOCUS_VISIBLE_PATTERN = re.compile(r":focus-visible|\bfocus-visible:")
 MOTION_PATTERN = re.compile(
-    r"@keyframes|\banimation(?:-name)?\s*:|\banimate-(?!none\b)[a-z]|\bgsap\b"
+    r"@keyframes|\banimation(?:-name)?\s*:(?!\s*none\b)|\banimate-(?!none\b)[a-z]|\bgsap\b"
     r"|framer-motion|motion/react|startViewTransition|scroll-behavior\s*:\s*smooth"
+    r"|transition(?:-property)?\s*:[^;{}]*\btransform\b|\btransition-transform\b"
 )
 REDUCED_MOTION_PATTERN = re.compile(
     r"prefers-reduced-motion|\bmotion-(?:safe|reduce):|useReducedMotion|MotionConfig"
 )
-BLUR_PATTERN = re.compile(r"backdrop-filter\s*:|\bbackdrop-blur\b")
+# One surface often needs a prefixed copy and an @supports fallback; count neither.
+BLUR_PATTERN = re.compile(
+    r"^(?!.*@supports)(?=.*(?:(?<!-webkit-)backdrop-filter\s*:(?!\s*none\b)|\bbackdrop-blur\b))"
+)
 
 
-def iter_candidate_files(roots: Sequence[Path]) -> Iterator[Path]:
+def iter_candidate_files(roots: Sequence[Path], unreadable: list[Path]) -> Iterator[Path]:
     for root in roots:
         if root.is_file():
-            if root.suffix.lower() in SCANNED_SUFFIXES:
-                yield root
+            yield root
             continue
-        for directory, subdirectories, filenames in os.walk(root):
+        walk = os.walk(root, onerror=lambda error: unreadable.append(Path(str(error.filename))))
+        for directory, subdirectories, filenames in walk:
             subdirectories[:] = sorted(d for d in subdirectories if d not in SKIPPED_DIRS)
             for filename in sorted(filenames):
                 path = Path(directory, filename)
@@ -273,25 +304,29 @@ def iter_candidate_files(roots: Sequence[Path]) -> Iterator[Path]:
                     yield path
 
 
-def read_sources(roots: Sequence[Path], result: ScanResult) -> list[SourceFile]:
-    sources: list[SourceFile] = []
-    for path in iter_candidate_files(roots):
-        if len(sources) + len(result.skipped) == MAX_FILES:
-            result.truncated = True
-            break
-        if not path.is_file():
-            continue  # a broken symlink: nothing to read
-        if path.stat().st_size > MAX_FILE_BYTES:
-            result.skipped.append(path)
+def collect_sources(roots: Sequence[Path]) -> Collection:
+    collection = Collection()
+    seen: set[Path] = set()
+    for path in iter_candidate_files(roots, collection.unreadable):
+        resolved = path.resolve()
+        if resolved in seen:
             continue
-        text = path.read_bytes().decode("utf-8", errors="replace")
-        sources.append(SourceFile(path, tuple(text.splitlines())))
-    result.files_scanned = len(sources)
-    return sources
-
-
-def finding_at(rule: Rule, path: Path, line: int) -> Finding:
-    return Finding(path, line, rule.rule_id, rule.severity, rule.message, rule.fix)
+        if len(seen) == MAX_FILES:
+            collection.truncated = True
+            break
+        seen.add(resolved)
+        try:
+            if not path.is_file():
+                continue  # a broken symlink: nothing to read
+            if path.stat().st_size > MAX_FILE_BYTES:
+                collection.skipped.append(path)
+                continue
+            text = path.read_bytes().decode("utf-8", errors="replace")
+        except OSError:
+            collection.unreadable.append(path)
+            continue
+        collection.sources.append(SourceFile(path, tuple(text.splitlines())))
+    return collection
 
 
 def locations(sources: Sequence[SourceFile], pattern: re.Pattern[str]) -> list[tuple[Path, int]]:
@@ -305,7 +340,7 @@ def locations(sources: Sequence[SourceFile], pattern: re.Pattern[str]) -> list[t
 
 def check_lines(sources: Sequence[SourceFile]) -> list[Finding]:
     return [
-        finding_at(line_rule.rule, source.path, number)
+        Finding(source.path, number, line_rule.rule)
         for source in sources
         for number, text in enumerate(source.lines, start=1)
         for line_rule in LINE_RULES
@@ -318,23 +353,27 @@ def check_project(sources: Sequence[SourceFile]) -> list[Finding]:
     findings = []
     if not locations(sources, FOCUS_VISIBLE_PATTERN):
         findings += [
-            finding_at(FOCUS_REMOVED, path, line)
+            Finding(path, line, FOCUS_REMOVED)
             for path, line in locations(sources, OUTLINE_REMOVED_PATTERN)
         ]
     motion = locations(sources, MOTION_PATTERN)
     if motion and not locations(sources, REDUCED_MOTION_PATTERN):
-        findings.append(finding_at(NO_REDUCED_MOTION, *motion[0]))
+        findings.append(Finding(*motion[0], NO_REDUCED_MOTION))
     blur = locations(sources, BLUR_PATTERN)
     if len(blur) > MAX_BLUR_SURFACES:
-        findings.append(finding_at(GLASS_EVERYWHERE, *blur[0]))
+        findings.append(Finding(*blur[0], GLASS_EVERYWHERE))
     return findings
 
 
 def scan(roots: Sequence[Path]) -> ScanResult:
-    result = ScanResult()
-    sources = read_sources(roots, result)
-    result.findings = check_lines(sources) + check_project(sources)
-    return result
+    collection = collect_sources(roots)
+    return ScanResult(
+        findings=check_lines(collection.sources) + check_project(collection.sources),
+        files_scanned=len(collection.sources),
+        skipped=collection.skipped,
+        unreadable=collection.unreadable,
+        truncated=collection.truncated,
+    )
 
 
 def counted(number: int, noun: str) -> str:
@@ -344,19 +383,21 @@ def counted(number: int, noun: str) -> str:
 def format_report(result: ScanResult) -> str:
     lines = []
     shown: Counter[str] = Counter()
-    for finding in sorted(result.findings, key=lambda f: (f.severity, str(f.path), f.line)):
-        shown[finding.rule_id] += 1
-        if shown[finding.rule_id] <= MAX_SHOWN_PER_RULE:
+    ordered = sorted(result.findings, key=lambda f: (f.rule.severity, str(f.path), f.line))
+    for finding in ordered:
+        rule = finding.rule
+        shown[rule.rule_id] += 1
+        if shown[rule.rule_id] <= MAX_SHOWN_PER_RULE:
             lines.append(
-                f"{finding.path}:{finding.line}: {finding.severity} {finding.rule_id}: "
-                f"{finding.message}. Fix: {finding.fix}."
+                f"{finding.path}:{finding.line}: {rule.severity} {rule.rule_id}: "
+                f"{rule.message}. Fix: {rule.fix}."
             )
     lines += [
         f"... and {count - MAX_SHOWN_PER_RULE} more {rule_id}"
         for rule_id, count in sorted(shown.items())
         if count > MAX_SHOWN_PER_RULE
     ]
-    severities = Counter(finding.severity for finding in result.findings)
+    severities = Counter(finding.rule.severity for finding in result.findings)
     summary = (
         f"{counted(severities[Severity.DEFECT], 'defect')}, "
         f"{counted(severities[Severity.TELL], 'tell')} "
@@ -365,6 +406,8 @@ def format_report(result: ScanResult) -> str:
     if result.skipped:
         names = ", ".join(str(path) for path in result.skipped)
         summary += f" Skipped (over {MAX_FILE_BYTES} bytes): {names}."
+    if result.unreadable:
+        summary += f" Could not read: {', '.join(str(path) for path in result.unreadable)}."
     if result.truncated:
         summary += f" Stopped after {MAX_FILES} files; scan a narrower path."
     lines.append(summary)
@@ -381,7 +424,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     result = scan(arguments.paths)
     print(format_report(result))
-    has_defect = any(finding.severity is Severity.DEFECT for finding in result.findings)
+    has_defect = any(finding.rule.severity is Severity.DEFECT for finding in result.findings)
     return 1 if has_defect else 0
 
 
