@@ -41,6 +41,7 @@ Rules for the brief:
 - **Derive, do not decorate.** Each line answers "why this, for this subject?". A palette taken from the product's materials, a typeface from its vernacular, a hero that opens with the most characteristic thing in its world.
 - **One signature, everything else quiet.** Stripe has its gradient wave, Apple its scroll-scrubbed product shots, Family its flying trays. Spend boldness once. Restraint around it is what makes it read.
 - **Restraint is a valid direction.** A calm, type-led, monochrome system with one accent is as deliberate as a WebGL hero, and usually the right call for tools and documentation.
+- **Quiet is not bare.** Restraint limits how many ideas a page has, not how rich each one is. The signature should reward a long look: an illustration drawn for this subject, real data set out with care, texture, type at true display scale. Food, culture, consumer and brand subjects usually need imagery or illustration to carry warmth, so a type-only page for one of them needs a stated reason.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
 
 Read `references/exemplars.md` when choosing a direction or signature, and `references/visual-system.md` when setting palette, type, layout and depth.
@@ -74,11 +75,18 @@ Treat the first build as a draft.
    ```
 
    Fix every `defect` (exit code 1 means at least one remains). For every `tell`, change it or say in your report why it stays. The checker reads source text only, so a clean result is necessary, not sufficient.
-2. If a browser or screenshot tool is available, look at the page at 375 px and 1440 px wide, in light and dark if both exist, and tab through it with the keyboard.
-3. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
-4. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
-5. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
-6. Report the brief, what the critique changed, and anything you could not verify (for example rendered contrast without a browser).
+2. Render the page and look at it at 1440 px and 375 px wide, in both colour schemes if it has two. Use a browser tool if the session has one. Otherwise most machines have headless Chrome or Edge; write screenshots and the browser profile to a temporary folder, then read the images:
+
+   ```
+   chrome --headless=new --hide-scrollbars --user-data-dir=<temp>/profile --window-size=1440,2600 --virtual-time-budget=4000 --screenshot=<temp>/desktop.png <file or http URL>
+   ```
+
+   Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Sections that stay blank in a full-page screenshot are hidden until a scroll reveal fires, which is itself a defect (see `references/interaction.md`). With a real browser tool, also tab through every flow.
+3. Ask whether the first screen gives the eye something worth looking at. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
+4. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
+5. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
+6. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
+7. Report the brief, what the critique changed, and anything you could not verify (for example rendered contrast without a browser).
 
 ## Build sheet
 

@@ -214,7 +214,17 @@ LINE_RULES: tuple[LineRule, ...] = (
         re.compile(
             r"\buppercase\b[^\"'\n]*\btracking-(?:wide|wider|widest)\b"
             r"|\btracking-(?:wide|wider|widest)\b[^\"'\n]*\buppercase\b"
+            r"|class(?:Name)?=[\"'][^\"']*\b(?:eyebrow|kicker|overline)\b"
         ),
+    ),
+    LineRule(
+        Rule(
+            "accent-word",
+            Severity.TELL,
+            "an italic accent word inside a heading is a fast-spreading generated tell",
+            "let the whole heading carry the voice through size, weight and setting",
+        ),
+        re.compile(r"<h[1-6]\b[^>]*>[^<]*<(?:em|i)\b"),
     ),
 )
 

@@ -60,6 +60,7 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
 - Gestures apply their movement directly (the sheet follows the finger) rather than playing a canned animation after a threshold. Destructive gesture actions commit on release, not mid-gesture.
 - One orchestrated page-load sequence (staggered by 40 to 80 ms) beats scattered effects on every element.
 - Scroll-triggered reveals on every section are a template habit. Use them only where they pace a story.
+- Content is visible before any script runs. A section hidden until an observer reveals it stays blank on slow devices, in print, to crawlers and in full-page screenshots. Reveal by enhancing visible content (add the hidden starting state from script, then animate), never by hiding it in the stylesheet.
 - View Transitions (`document.startViewTransition`, or `@view-transition { navigation: auto; }` for multi-page sites) give shared-element continuity without a single-page framework. Feature-detect and respect reduced motion.
 
 ### Reduced motion
@@ -150,7 +151,8 @@ Run this on the built page, not on the plan.
 
 **Look**
 - [ ] Viewed at 375 px and 1440 px (and in dark mode if it exists); nothing overflows horizontally.
-- [ ] One signature moment; everything else quieter than the content.
+- [ ] One signature moment, rich enough to reward a long look; everything else quieter than the content.
+- [ ] Every section is visible in a full-page screenshot taken without scrolling.
 - [ ] Every colour, font, radius, shadow and spacing value comes from a token.
 - [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared.
 - [ ] The tell check in `slop-tells.md` passes, or each remaining tell has a stated reason.

@@ -106,6 +106,25 @@ LINE_RULE_CASES = [
     ("filler-copy", "a.html", "<p>Seamless integration</p>", "<p>Integrates with Xero</p>"),
     ("trusted-by", "a.html", "<p>Trusted by 10,000+ teams</p>", "<p>Used at Royal Mail</p>"),
     (
+        "accent-word",
+        "a.html",
+        "<h1>Proper sourdough, <em>on your doorstep</em> every Friday.</h1>",
+        "<h1>Sourdough from our Bedminster oven, every Friday.</h1>",
+    ),
+    (
+        "accent-word",
+        "a.tsx",
+        '<h2 className="title">Every finding has a <i>price tag</i></h2>',
+        "<p>Read the <em>whole</em> report.</p>",
+    ),
+    (
+        "uppercase-label",
+        "a.html",
+        '<span class="eyebrow">How it works</span>',
+        '<span class="lede">',
+    ),
+    ("uppercase-label", "a.html", '<p class="hero-kicker">New</p>', '<p class="hero-lede">New</p>'),
+    (
         "uppercase-label",
         "a.html",
         '<p class="uppercase tracking-widest text-xs">Features</p>',
