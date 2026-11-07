@@ -67,11 +67,18 @@ Revise the brief, then build.
 
 Treat the first build as a draft.
 
-1. If a browser or screenshot tool is available, look at the page at 375 px and 1440 px wide, in light and dark if both exist, and tab through it with the keyboard.
-2. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
-3. Re-run the tell check against the built page, not the brief.
-4. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
-5. Report the brief, what the critique changed, and anything you could not verify (for example rendered contrast without a browser).
+1. Run the static checker over the files you wrote, using the skill's own directory for the script path. It needs Python 3.11 or later and no packages:
+
+   ```
+   python <skill-dir>/scripts/check_slop.py <files or folders you changed>
+   ```
+
+   Fix every `defect` (exit code 1 means at least one remains). For every `tell`, change it or say in your report why it stays. The checker reads source text only, so a clean result is necessary, not sufficient.
+2. If a browser or screenshot tool is available, look at the page at 375 px and 1440 px wide, in light and dark if both exist, and tab through it with the keyboard.
+3. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
+4. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
+5. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
+6. Report the brief, what the critique changed, and anything you could not verify (for example rendered contrast without a browser).
 
 ## Build sheet
 
@@ -104,5 +111,6 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/interaction.md`: navigation, motion, states, forms, performance, accessibility and the critique checklist.
 - `references/slop-tells.md`: the catalogue of generic tells, why they appear and what to do instead.
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
+- `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 
 The evidence behind every rule is in the `research/` folder of the repository this skill is published from.
