@@ -68,10 +68,10 @@ Revise the brief, then build.
 
 Treat the first build as a draft.
 
-1. Run the static checker over the files you wrote, using the skill's own directory for the script path. It needs Python 3.11 or later and no packages:
+1. Run the static checker, using the skill's own directory for the script path. It needs Python 3.11 or later and no packages. Point it at the whole front-end source, not only the files you changed: the focus and reduced-motion rules look for a global style anywhere in the scan, so a partial scan reports false defects.
 
    ```
-   python <skill-dir>/scripts/check_slop.py <files or folders you changed>
+   python <skill-dir>/scripts/check_slop.py <front-end source folder>
    ```
 
    Fix every `defect` (exit code 1 means at least one remains). For every `tell`, change it or say in your report why it stays. The checker reads source text only, so a clean result is necessary, not sufficient.
@@ -81,7 +81,7 @@ Treat the first build as a draft.
    chrome --headless=new --hide-scrollbars --user-data-dir=<temp>/profile --window-size=1440,2600 --virtual-time-budget=4000 --screenshot=<temp>/desktop.png <file or http URL>
    ```
 
-   Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Sections that stay blank in a full-page screenshot are hidden until a scroll reveal fires, which is itself a defect (see `references/interaction.md`). With a real browser tool, also tab through every flow.
+   The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
 3. Ask whether the first screen gives the eye something worth looking at. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
 4. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
 5. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
@@ -107,7 +107,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Depth | Tone steps and hairline borders first; shadows layered, one light source, tinted with the surface hue |
 | Radii | Two or three values; nested radius = outer radius minus padding |
 | Icons | One family, one grid, one stroke width; no emoji as interface icons |
-| Motion | Under 300 ms, strong ease-out, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
+| Motion | Routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
 | Navigation | Visible top-level links on desktop, up to four visible on mobile, UI state in the URL |
 | Loading | Nothing under about 1 s; delay indicators 150 to 300 ms, then show for at least 300 to 500 ms |
 | Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; visible response to input within 100 ms |

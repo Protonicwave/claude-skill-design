@@ -6,11 +6,11 @@ How to turn the brief into tokens. Every section gives the rule, the reason and 
 
 ### Work in OKLCH
 
-OKLCH is perceptually uniform: the same lightness value reads as equally light across hues. That makes colour arithmetic predictable, which is how Linear cut each theme from 98 hand-set variables to three inputs (base, accent, contrast) and generated every surface from them.
+OKLCH is perceptually uniform: the same lightness value reads as equally light across hues, so colour arithmetic gives predictable results. Linear relied on the same property, working in the related LCH space, to cut each theme from 98 hand-set variables to three inputs (base, accent, contrast) and generate every surface from them.
 
 ```css
 :root {
-  --accent: oklch(0.62 0.17 35);
+  --accent: oklch(0.62 0.14 85);
   --accent-hover: oklch(from var(--accent) calc(l + 0.06) c h);
   --accent-press: oklch(from var(--accent) calc(l - 0.06) c h);
   /* Same lightness and chroma, different hue: keeps contrast parity with the accent. */
@@ -19,7 +19,7 @@ OKLCH is perceptually uniform: the same lightness value reads as equally light a
 }
 
 @media (color-gamut: p3) {
-  :root { --accent: oklch(0.62 0.21 35); } /* richer on wide-gamut screens */
+  :root { --accent: oklch(0.62 0.17 85); } /* richer on wide-gamut screens */
 }
 ```
 
@@ -46,7 +46,7 @@ Radix gives every step a job. Use the same roles for the neutral and each accent
 | 11 | Low-contrast text (secondary copy, labels) |
 | 12 | High-contrast text (headings, body) |
 
-Starting point for a light neutral ladder (replace hue `h` and chroma `c` with the subject's tint):
+Starting point for a light neutral ladder (replace hue `h` with the subject's tint, and raise the chroma column for a stronger tint):
 
 ```css
 :root {
@@ -86,7 +86,7 @@ A separate palette, not an inversion.
 - RGB interpolation between saturated colours passes through a grey "dead zone". Interpolate in OKLCH:
 
   ```css
-  background: linear-gradient(to bottom right in oklch, oklch(0.80 0.12 70), oklch(0.62 0.17 35));
+  background: linear-gradient(to bottom right in oklch, oklch(0.80 0.11 95), oklch(0.62 0.14 85));
   ```
 
 - Use adjacent hues. Two distant hues (purple to blue, coral to violet to cyan) are the generic look.
@@ -120,7 +120,7 @@ Candidates by voice, all free to use (Google Fonts unless marked Fontshare). Thi
 | Contemporary grotesk with character | Bricolage Grotesque, Schibsted Grotesk, Familjen Grotesk, Hanken Grotesk, Onest, Switzer (Fontshare), General Sans (Fontshare) |
 | Geometric, friendly | Figtree, Outfit, Sora, Urbanist, Lexend |
 | Display, expressive | Syne, Unbounded, Big Shoulders Display, Anybody, Clash Display (Fontshare), Gloock, Bodoni Moda |
-| Technical, mono | IBM Plex Mono, Martian Mono, Azeret Mono, Red Hat Mono, Commit Mono, Spline Sans Mono |
+| Technical, mono | IBM Plex Mono, Martian Mono, Azeret Mono, Red Hat Mono, Spline Sans Mono |
 | Institutional, humanist | IBM Plex Sans, Source Sans 3, Public Sans, Atkinson Hyperlegible |
 
 Variable fonts with width or optical-size axes (Fraunces, Anybody, Bricolage Grotesque, Archivo) let one family carry both display and text roles.
@@ -131,7 +131,7 @@ Variable fonts with width or optical-size axes (Fraunces, Anybody, Bricolage Gro
 - Measure 45 to 90 characters; aim for about 65. Use `max-width: 65ch` on prose.
 - Tracking tightens with size. Inter's published curve gives about -0.011em at 16 px and about -0.022em from 32 px up; most grotesks behave similarly. Never add negative tracking to small text.
 - All caps only for short labels, with 0.05em to 0.12em letter-spacing. Bold and italic never together.
-- `text-wrap: balance` on headings, `text-wrap: pretty` on paragraphs. Both are Baseline.
+- `text-wrap: balance` on headings and `text-wrap: pretty` on paragraphs. Browsers without support set ordinary wrapping, so both are safe to add.
 - `font-variant-numeric: tabular-nums` wherever numbers are compared (tables, prices, counters, timers).
 - Curly quotes, a real ellipsis character, and non-breaking spaces between numbers and units.
 - Hierarchy from size and weight steps first, colour second. Big jumps read as confident: a hero at 3x the body size or more is normal on marketing pages.
@@ -179,7 +179,7 @@ For a more dramatic editorial or brand page, raise the large-screen ratio to 1.3
 
 Order of preference: tone, then hairline, then shadow, then blur.
 
-- **Tone steps.** Raise elevation by lightening the surface one step (dark mode) or by placing a step-1 surface on step-2 (light mode). Linear's whole elevation system is lightness steps from one generator.
+- **Tone steps.** In dark mode, raise elevation by lightening the surface one step. In light mode, set a step-2 card on the step-1 page and separate them with a step-6 hairline. Linear's whole elevation system is lightness steps from one generator.
 - **Hairlines.** A 1 px border at neutral step 6, or a semi-transparent border (`oklch(0 0 0 / 0.08)`) that adapts to any surface. Linear's rule: "structure should be felt, not seen", so soften borders and remove separators that are not needed.
 - **Shadows** follow physics: one light source for the whole page, several layers that double in offset and blur, low opacity, tinted with the background hue rather than black.
 

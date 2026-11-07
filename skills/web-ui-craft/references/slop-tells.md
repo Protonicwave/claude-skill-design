@@ -22,7 +22,7 @@ Telling a model to avoid a default moves it to the next most probable choice. An
 
 ## The tells, by layer
 
-Fixing one layer leaves the others intact. Check all five.
+Fixing one layer leaves the others intact. Check all five. `scripts/check_slop.py` catches the tells that show up in source text; structural ones, such as the centred badge hero or three identical cards, need a look at the rendered page.
 
 ### Type
 

@@ -47,7 +47,7 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
 
 ### Rules
 
-- Keep UI animation under 300 ms. A 180 ms select feels more responsive than a 400 ms one.
+- Keep routine UI animation under 300 ms; a 180 ms select feels more responsive than a 400 ms one. Modals, sheets and page transitions take 200 to 400 ms, and only large gesture-driven sheets go up to 500 ms.
 - Use ease-out for things entering and leaving. Built-in `ease-out` is weak; use a stronger curve. Avoid `ease-in` for UI: it starts slowly and feels laggy. Avoid bounce and elastic easing in product UI.
 - Animate only `transform` and `opacity`. Width, height, top, left, margin and padding trigger layout and paint and cause jank and layout shift.
 - Never `transition: all`. List the properties.
@@ -114,7 +114,7 @@ Anything that moves for more than five seconds alongside other content needs a p
 - Pointer targets at least 24 by 24 CSS px (WCAG 2.5.8); 44 px on touch. If the visual is smaller, extend the hit area with padding or a pseudo-element.
 - Checkboxes and radios share a hit area with their labels. Nothing that looks interactive is inert.
 - `touch-action: manipulation` on controls to remove double-tap delay.
-- Every drag, swipe or pinch has a click and keyboard alternative (WCAG 2.5.7).
+- Every drag has a single-pointer alternative (WCAG 2.5.7), as does every swipe, pinch or other path or multipoint gesture (2.5.1). Each action also works from the keyboard (2.1.1).
 - `overscroll-behavior: contain` on modals and drawers.
 
 ## Performance
@@ -122,7 +122,7 @@ Anything that moves for more than five seconds alongside other content needs a p
 Speed is an aesthetic property.
 
 - **Response limits**: 0.1 s feels instant; 1 s keeps the flow of thought; 10 s is the limit of attention. Productivity drops past about 400 ms (the Doherty threshold).
-- **Core Web Vitals** at the 75th percentile: LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1. A page passes only if all three pass. Aim for a visible response within 100 ms and treat 200 ms as the floor.
+- **Core Web Vitals** at the 75th percentile: LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1. A page passes only if all three pass. Aim for a visible response within 100 ms and treat 200 ms as the ceiling.
 - **Layout shift**: set dimensions or `aspect-ratio` on all media, reserve space for anything that loads late, match fallback font metrics, animate with transforms.
 - **Spectacle budget**: one Spline or WebGL hero can add 0.8 to 2 MB of JavaScript and heavy `backdrop-filter` can cost 15 to 30% of frame rate on mid-range Android (agency-reported figures). Lazy-initialise heavy layers after first paint, pause them off-screen, and serve a static image to constrained devices and reduced-motion users.
 - Preload only above-the-fold images and critical fonts; lazy-load the rest; prefer looping `<video>` to GIFs; use `content-visibility: auto` for long pages.
@@ -152,7 +152,7 @@ Run this on the built page, not on the plan.
 **Look**
 - [ ] Viewed at 375 px and 1440 px (and in dark mode if it exists); nothing overflows horizontally.
 - [ ] One signature moment, rich enough to reward a long look; everything else quieter than the content.
-- [ ] Every section is visible in a full-page screenshot taken without scrolling.
+- [ ] No content needs a script to become visible: hidden starting states for reveals are applied by script, not by the stylesheet.
 - [ ] Every colour, font, radius, shadow and spacing value comes from a token.
 - [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared.
 - [ ] The tell check in `slop-tells.md` passes, or each remaining tell has a stated reason.
