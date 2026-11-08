@@ -47,7 +47,6 @@ CLS_AUDIT = "cumulative-layout-shift"
 TOTAL_BLOCKING_TIME_AUDIT = "total-blocking-time"
 RESOURCE_SUMMARY_AUDIT = "resource-summary"
 ANIMATIONS_AUDIT = "non-composited-animations"
-SCRIPT_WEIGHT = "script-weight"
 
 
 class ReportError(Exception):
@@ -55,7 +54,7 @@ class ReportError(Exception):
 
 
 class Status(StrEnum):
-    WITHIN_BUDGET = "pass"
+    PASS = "pass"  # noqa: S105 (a status word, not a password)
     BREACH = "breach"
     UNMEASURED = "unmeasured"
 
@@ -63,12 +62,6 @@ class Status(StrEnum):
 @dataclass(frozen=True, slots=True)
 class Unmeasured:
     reason: str
-
-
-@dataclass(frozen=True, slots=True)
-class AnimatedElement:
-    selector: str
-    causes: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,10 +81,20 @@ class Budget:
         return f"{self.limit:g}{self.unit}"
 
 
+LCP = Budget(LCP_AUDIT, LCP_BUDGET_MS, " ms", 0)
+CLS = Budget(CLS_AUDIT, CLS_BUDGET, "", 3)
+TOTAL_BLOCKING_TIME = Budget(TOTAL_BLOCKING_TIME_AUDIT, TOTAL_BLOCKING_TIME_BUDGET_MS, " ms", 0)
+
+
 @dataclass(frozen=True, slots=True)
 class Outcome:
     status: Status
     lines: tuple[str, ...]
+
+
+# Lighthouse JSON is untyped and its nested fields vary between versions, so each
+# reader narrows the fields it uses with these three, and a missing or malformed
+# field becomes an unmeasured figure rather than an exception.
 
 
 def mapping(value: object) -> Mapping[str, object]:
@@ -119,11 +122,10 @@ def load_report(path: Path) -> Mapping[str, object]:
     if len(raw) > MAX_REPORT_BYTES:
         raise ReportError(f"{path}: report is over {MAX_REPORT_BYTES} bytes")
     try:
-        # Untyped JSON enters here; everything past this function sees narrowed types.
         report: object = json.loads(raw)
     except (ValueError, RecursionError) as error:
         raise ReportError(f"{path}: invalid JSON ({error})") from error
-    if not isinstance(report, dict) or not isinstance(report.get("audits"), dict):
+    if not isinstance(report, dict) or not isinstance(audits := report.get("audits"), dict):
         raise ReportError(f"{path}: not a Lighthouse report, expected an object with audits")
     if report.get("runtimeError") is not None:
         runtime_error = mapping(report["runtimeError"])
@@ -142,7 +144,7 @@ def load_report(path: Path) -> Mapping[str, object]:
             f"{path}: throttling method is {throttling!r} but budgets assume throttled "
             "figures; rerun Lighthouse without --throttling-method=provided"
         )
-    return mapping(report["audits"])
+    return audits
 
 
 def find_audit(audits: Mapping[str, object], audit_id: str) -> Mapping[str, object] | Unmeasured:
@@ -175,7 +177,8 @@ def read_script_kib(audits: Mapping[str, object]) -> float | Unmeasured:
     return Unmeasured(f"{RESOURCE_SUMMARY_AUDIT} has no script transfer size")
 
 
-def read_element(item: object) -> AnimatedElement:
+def read_element(item: object) -> str:
+    """Return one listed line: the element's selector and why it is not composited."""
     fields = mapping(item)
     selector = mapping(fields.get("node")).get("selector")
     causes = []
@@ -183,15 +186,11 @@ def read_element(item: object) -> AnimatedElement:
         cause = mapping(sub_item)
         reason = cause.get("failureReason", "unknown reason")
         causes.append(f"{reason} ({cause.get('animation', 'unnamed animation')})")
-    return AnimatedElement(
-        selector=selector if isinstance(selector, str) else "(no selector)",
-        causes=tuple(causes),
-    )
+    selector_text = selector if isinstance(selector, str) else "(no selector)"
+    return f"  {selector_text}: {'; '.join(causes) or 'no reason given'}"
 
 
-def read_animated_elements(
-    audits: Mapping[str, object],
-) -> tuple[AnimatedElement, ...] | Unmeasured:
+def read_animated_elements(audits: Mapping[str, object]) -> tuple[str, ...] | Unmeasured:
     audit = find_audit(audits, ANIMATIONS_AUDIT)
     if isinstance(audit, Unmeasured):
         return audit
@@ -206,38 +205,33 @@ def read_animated_elements(
 def judge_numeric(budget: Budget, reading: float | Unmeasured) -> Outcome:
     if isinstance(reading, Unmeasured):
         return Outcome(Status.UNMEASURED, (f"{Status.UNMEASURED} {budget.name}: {reading.reason}",))
-    status = Status.WITHIN_BUDGET if budget.printed(reading) <= budget.limit else Status.BREACH
+    status = Status.PASS if budget.printed(reading) <= budget.limit else Status.BREACH
     line = f"{status} {budget.name}: {budget.figure(reading)} (budget {budget.limit_text()})"
     return Outcome(status, (line,))
 
 
-def judge_animations(elements: tuple[AnimatedElement, ...] | Unmeasured) -> Outcome:
+def judge_animations(elements: tuple[str, ...] | Unmeasured) -> Outcome:
     if isinstance(elements, Unmeasured):
         reason = f"{Status.UNMEASURED} {ANIMATIONS_AUDIT}: {elements.reason}"
         return Outcome(Status.UNMEASURED, (reason,))
     count = len(elements)
     noun = "element" if count == 1 else "elements"
-    status = Status.WITHIN_BUDGET if count <= MAX_NON_COMPOSITED_ANIMATIONS else Status.BREACH
-    budget = MAX_NON_COMPOSITED_ANIMATIONS
-    summary = f"{status} {ANIMATIONS_AUDIT}: {count} {noun} (budget {budget})"
-    listed = [
-        f"  {element.selector}: {'; '.join(element.causes) or 'no reason given'}"
-        for element in elements[:MAX_ELEMENTS_LISTED]
-    ]
+    status = Status.PASS if count <= MAX_NON_COMPOSITED_ANIMATIONS else Status.BREACH
+    summary = (
+        f"{status} {ANIMATIONS_AUDIT}: {count} {noun} (budget {MAX_NON_COMPOSITED_ANIMATIONS})"
+    )
+    listed = list(elements[:MAX_ELEMENTS_LISTED])
     if count > MAX_ELEMENTS_LISTED:
         listed.append(f"  ... and {count - MAX_ELEMENTS_LISTED} more")
     return Outcome(status, (summary, *listed))
 
 
 def judge(audits: Mapping[str, object], script_budget_kib: float) -> list[Outcome]:
-    lcp = Budget(LCP_AUDIT, LCP_BUDGET_MS, " ms", 0)
-    cls = Budget(CLS_AUDIT, CLS_BUDGET, "", 3)
-    blocking = Budget(TOTAL_BLOCKING_TIME_AUDIT, TOTAL_BLOCKING_TIME_BUDGET_MS, " ms", 0)
-    script = Budget(SCRIPT_WEIGHT, script_budget_kib, " KiB", 0)
+    script = Budget("script-weight", script_budget_kib, " KiB", 0)
     return [
-        judge_numeric(lcp, read_numeric(audits, LCP_AUDIT)),
-        judge_numeric(cls, read_numeric(audits, CLS_AUDIT)),
-        judge_numeric(blocking, read_numeric(audits, TOTAL_BLOCKING_TIME_AUDIT)),
+        judge_numeric(LCP, read_numeric(audits, LCP_AUDIT)),
+        judge_numeric(CLS, read_numeric(audits, CLS_AUDIT)),
+        judge_numeric(TOTAL_BLOCKING_TIME, read_numeric(audits, TOTAL_BLOCKING_TIME_AUDIT)),
         judge_numeric(script, read_script_kib(audits)),
         judge_animations(read_animated_elements(audits)),
     ]
