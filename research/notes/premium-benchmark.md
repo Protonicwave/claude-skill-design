@@ -89,7 +89,21 @@ Observed by running Lighthouse 13.6.0 (mobile, simulated throttling: 150 ms RTT,
 - `resource-summary` gives transfer size per resource type. Python's `http.server` sends files uncompressed, so script weight measured through it reads higher than a production server would deliver: a 196 KiB file was reported at its full size.
 - The baseline brand page (Kestrel S-16, built with the skill at 409a764) scored LCP 1.4 s, CLS 0.092, total blocking time 0 ms and 96 KiB in total. Its CLS sits just under the 0.1 budget, which no reading of the source had shown.
 
-## 5. Implications for web-ui-craft
+## 5. Defaults from component libraries and from the skill itself
+
+### Takeaway
+frontend-design's list misses two sources of default. Some effects arrive ready-made from component libraries and get attached whatever the subject. Others come from web-ui-craft itself: both baseline pages took the same typeface from its candidate list.
+
+### Findings
+- The cursor-following spotlight card ships ready-made in several libraries, checked on 8 November 2026. Aceternity UI's "card spotlight" installs through the shadcn CLI and depends on framer-motion. [Aceternity UI, card spotlight](https://ui.aceternity.com/components/card-spotlight) Magic UI's Magic Card is "A spotlight effect that follows your mouse cursor and highlights borders on hover." [Magic UI, Magic Card](https://v3.magicui.design/docs/components/magic-card) An account named @claude-ai on 21st.dev publishes "Interactive cards with a radial mouse-following spotlight glow". [21st.dev, Spotlight Cards](https://21st.dev/@claude-ai/components/spotlight)
+- Geometric grain (a dot pattern, a hairline grid or noise over the whole dark surface) is the fifth of Brainy Papers' SaaS tells; see `ai-slop-and-distinctiveness.md`.
+- Two baseline pages were built with web-ui-craft at 409a764 from separate prompts (a database-branching tool and a hardware sequencer). Both picked Schibsted Grotesk from the "contemporary grotesk" row of the candidate list in `visual-system.md`, and both paired it with a mono face from the same list (Spline Sans Mono, Martian Mono) used for every label and figure. Both tinted their neutrals cool (hues 240 and 250) and separated sections with hairlines. The checker reported no tells on either page.
+
+### Inferences
+- A named list of recommended fonts becomes the default for a model that reads it, as Anthropic's 2025 list did for Space Grotesk. Two builds show convergence; they do not measure how often it happens.
+- No source examined calls the spotlight card a tell. It is treated as a default here because it is installed whole and attached to cards whatever the subject, which is the same mechanism that spread the three-card grid.
+
+## 6. Implications for web-ui-craft
 
 - A method for building the hero piece in code when no assets exist, with a fidelity checklist.
 - Light from a believable source allowed as a material; decorative glow stays a tell.
@@ -97,6 +111,7 @@ Observed by running Lighthouse 13.6.0 (mobile, simulated throttling: 150 ms RTT,
 - Motion taught by site tier, with choreography, springs, shared-element motion, scroll-linked animation and a hero piece that plays itself.
 - Speed measured in the critique step, with a weight budget for the spectacle.
 - The giveaway list reframed as defaults versus decisions and updated with frontend-design's clusters.
+- The font candidate list replaced by a method for finding a face, since the list itself became the default.
 - From frontend-design: compared layout sketches, the convergence test, type as an active element, the copy consistency rule.
 - A premium bar in the critique: compare the build with a reference site in the same direction.
 
