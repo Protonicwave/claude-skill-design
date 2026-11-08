@@ -37,6 +37,8 @@ Motion:       the tier (product or brand), the signature moment and its lead ele
               else moves and for how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
 Copy:         the headline and primary action, written for this audience
+Budget:       compressed script for the whole page and the share the spectacle layer may take
+              (365 KiB in total by default; 75 KiB for a page with no spectacle)
 ```
 
 Rules for the brief:
@@ -66,7 +68,7 @@ Revise the brief, then build.
 - **Structure second.** Semantic HTML, real links for navigation, headings in order, then style.
 - **Apply the build sheet** below and the detail in `references/visual-system.md` and `references/interaction.md`.
 - **Design every state.** Hover, active, focus-visible, disabled, loading, empty, error, success, long content and short content. Generated UI is weakest here, and the fixes are cheapest here.
-- **Keep spectacle cheap and optional.** Heavy effects (WebGL, video, large blur) live in one isolated layer, have a static fallback, and sit behind `prefers-reduced-motion: no-preference`.
+- **Keep spectacle cheap and optional.** Heavy effects (WebGL, video, large blur) live in one isolated layer within the brief's budget, start after first paint, have a static fallback, and sit behind `prefers-reduced-motion: no-preference`.
 
 ## 5. Critique and cut
 
@@ -86,11 +88,19 @@ Treat the first build as a draft.
    ```
 
    The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
-3. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
-4. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
-5. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
-6. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
-7. Report the brief, what the critique changed, and anything you could not verify (for example rendered contrast without a browser).
+3. Measure the page rather than estimating it. Serve it over HTTP (for a static folder, `python -m http.server` in that folder), run Lighthouse in its default mobile profile, then read the report with the budget reader:
+
+   ```
+   npx lighthouse@13.6.0 <http URL> --output=json --output-path=<temp>/report.json --quiet --chrome-flags="--headless=new --user-data-dir=<temp>/lh-profile"
+   python <skill-dir>/scripts/check_budgets.py <temp>/report.json --script-kib <the brief's budget>
+   ```
+
+   It checks LCP (2.5 s), CLS (0.1), total blocking time (200 ms, the lab stand-in for INP), script weight against the brief, and lists every non-composited animation by element. Fix every `breach` (exit code 1). Exit code 2 means a figure is `unmeasured` or the report is unusable: rerun, and if it still fails, report the figure as unmeasured, never as passed. `http.server` does not compress, so script weight reads high, which errs on the safe side. Set `CHROME_PATH` if Lighthouse cannot find Chrome. If Node or the network is unavailable, say so in the report. Lighthouse does not measure the frame rate of the signature moment: record a performance trace with a browser tool if the session has one, and otherwise say it is unmeasured.
+4. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
+5. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
+6. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
+7. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
+8. Report the brief, what the critique changed, the measured figures against their budgets, and anything you could not verify (for example rendered contrast without a browser).
 
 ## Build sheet
 
@@ -114,7 +124,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Motion | Tier named in the brief; routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out or a settling spring, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
 | Navigation | Visible top-level links on desktop, up to four visible on mobile, UI state in the URL |
 | Loading | Nothing under about 1 s; delay indicators 150 to 300 ms, then show for at least 300 to 500 ms |
-| Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; visible response to input within 100 ms |
+| Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; lab total blocking time at most 200 ms; script within the brief's budget; visible response to input within 100 ms |
 | Targets and focus | At least 24 px (44 px on touch); visible `:focus-visible` ring never hidden by sticky elements |
 
 ## References
@@ -125,5 +135,6 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
+- `scripts/check_budgets.py`: reads a Lighthouse report and compares it with the page budgets, used in step 5.
 
 The evidence behind every rule is in the `research/` folder of the repository this skill is published from.

@@ -313,6 +313,9 @@ Speed is an aesthetic property.
 
 - **Response limits**: 0.1 s feels instant; 1 s keeps the flow of thought; 10 s is the limit of attention. Productivity drops past about 400 ms (the Doherty threshold).
 - **Core Web Vitals** at the 75th percentile: LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1. A page passes only if all three pass. Aim for a visible response within 100 ms and treat 200 ms as the ceiling.
+- **Measure in the lab** with Lighthouse's mobile profile and `scripts/check_budgets.py` (SKILL.md, step 5). A page-load report has no INP because nothing is clicked; total blocking time at most 200 ms stands in for it.
+- **Script weight**: about 365 KiB of compressed JavaScript keeps a script-heavy page interactive within 3 s on a 75th-percentile phone and network; a page built from markup should stay near 75 KiB. The brief sets the page's figure and the spectacle layer's share of it.
+- **Keep the LCP element visible.** Chromium does not count an element at opacity 0 as a contentful paint, so a headline held invisible by an entrance animation delays LCP until it appears. Animate the headline from a visible state, or let a different element be the largest.
 - **Layout shift**: set dimensions or `aspect-ratio` on all media, reserve space for anything that loads late, match fallback font metrics, animate with transforms.
 - **Spectacle budget**: one Spline or WebGL hero can add 0.8 to 2 MB of JavaScript and heavy `backdrop-filter` can cost 15 to 30% of frame rate on mid-range Android (agency-reported figures). Lazy-initialise heavy layers after first paint, pause them off-screen, and serve a static image to constrained devices and reduced-motion users.
 - Preload only above-the-fold images and critical fonts; lazy-load the rest; prefer looping `<video>` to GIFs; use `content-visibility: auto` for long pages.
@@ -363,6 +366,11 @@ Run this on the built page, not on the plan.
 - [ ] `prefers-reduced-motion` handled; flourishes fall back to opacity.
 
 **Performance and access**
+- [ ] `scripts/check_budgets.py` passes on a Lighthouse mobile report, or every unmeasured figure is named in the report.
+- [ ] The spectacle layer starts after first paint, pauses off-screen, has a static fallback and fits its share of the script budget.
+- [ ] The LCP element is visible from first paint, not held at opacity 0 by an entrance animation.
+- [ ] Every control shows a pressed state on `:active`, so input gets a visible response within 100 ms even when the work behind it takes longer.
+- [ ] Loading indicators wait 150 to 300 ms before appearing and stay at least 300 to 500 ms once shown.
 - [ ] Media has dimensions; fonts are WOFF2 with explicit `font-display`; heavy effects lazy and optional.
 - [ ] Keyboard-only walk-through completes every flow; focus is always visible.
 - [ ] Contrast passes WCAG AA; body text comfortably, not barely.
