@@ -26,11 +26,13 @@ Write a compact brief in your response before writing code. It is the design, so
 
 ```
 Direction:    a named aesthetic and why it fits this subject (one or two lines)
-Signature:    the one idea this page is remembered for, and where it lives
+Signature:    the one idea this page is remembered for, the hero piece that carries it, and how
+              that piece will be made (supplied assets, a generated image, or built in code)
 Palette:      neutral (tinted toward ...), one accent (role), semantic colours; OKLCH values
 Type:         family and role for each (display, text, mono if needed); scale ratio; body size
 Layout:       grid, measure, density, section rhythm; a rough wireframe of the first screen
-Depth:        how surfaces separate (tone steps, hairlines, shadows) and why
+Depth:        how surfaces separate (tone steps, hairlines, shadows), where the light comes from
+              and what it falls on
 Motion:       what moves, how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
 Copy:         the headline and primary action, written for this audience
@@ -42,6 +44,7 @@ Rules for the brief:
 - **One signature, everything else quiet.** Stripe has its gradient wave, Apple its scroll-scrubbed product shots, Family its flying trays. Spend boldness once. Restraint around it is what makes it read.
 - **Restraint is a valid direction.** A calm, type-led, monochrome system with one accent is as deliberate as a WebGL hero, and usually the right call for tools and documentation.
 - **Quiet is not bare.** Restraint limits how many ideas a page has, not how rich each one is. The signature should reward a long look: an illustration drawn for this subject, real data set out with care, texture, type at true display scale. Food, culture, consumer and brand subjects usually need imagery or illustration to carry warmth, so a type-only page for one of them needs a stated reason.
+- **The hero piece is where the effort goes.** Acclaimed sites break plenty of rules and still look expensive because one piece is made to a very high standard: a product screen with believable data, a lit object, an owned illustration. Choose and build it with `references/artefacts.md`. A rounded box with grey bars in it is not a product shot.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
 
 Read `references/exemplars.md` when choosing a direction or signature, and `references/visual-system.md` when setting palette, type, layout and depth.
@@ -82,7 +85,7 @@ Treat the first build as a draft.
    ```
 
    The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
-3. Ask whether the first screen gives the eye something worth looking at. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
+3. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
 4. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
 5. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
 6. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
@@ -119,6 +122,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/interaction.md`: navigation, motion, states, forms, performance, accessibility and the critique checklist.
 - `references/slop-tells.md`: the catalogue of generic tells, why they appear and what to do instead.
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
+- `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 
 The evidence behind every rule is in the `research/` folder of the repository this skill is published from.

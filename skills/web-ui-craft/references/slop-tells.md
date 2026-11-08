@@ -40,7 +40,7 @@ Fixing one layer leaves the others intact. Check all five. `scripts/check_slop.p
 |---|---|
 | Indigo, violet or purple primary (`indigo-500`, `#6366f1`, `violet-600`) | An accent taken from the subject |
 | Purple-to-blue or coral-to-violet-to-cyan gradients, gradient text in headlines | At most one gradient, in adjacent hues, modelling something real |
-| Aurora glow or blurred mesh behind the hero, coloured glow shadows | Tone steps and a neutral, physically plausible shadow |
+| Aurora glow or blurred mesh behind the hero, coloured glow shadows | Tone steps and a neutral, physically plausible shadow; for drama, light from one source falling on something real (see `artefacts.md`) |
 | Five or more neon colours with no hierarchy | One accent with a job; neutrals for everything else |
 | Permanent dark slate with medium-grey body text that barely passes contrast | Light or dark chosen for the subject; body text passing comfortably |
 | Pure black and pure white neutrals | Neutrals tinted toward the subject |

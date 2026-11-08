@@ -198,6 +198,7 @@ Order of preference: tone, then hairline, then shadow, then blur.
   Combine a shadow with a hairline border for crisp edges. Coloured glow shadows (`0 0 40px` of the accent) are a tell.
 - **Glass** only where content genuinely scrolls beneath (a sticky header over imagery). A plain `backdrop-filter` samples only what is directly behind and looks flat; extend the blurred layer to about twice the element's height and mask it, add a translucent tint, and provide an opaque fallback in `@supports not (backdrop-filter: blur(1px))`. Heavy blur costs frame rate on mid-range phones, so keep it small and few.
 - **Skeuomorphic depth** is justified when it models a real object, as Raycast's keycaps model a keyboard. Depth that models nothing is ornament.
+- **Light** is a material, separate from the surface order above. The hero of a premium page is usually lit: a spotlight on a product, a pool of light under a product screen. Light from one named source that falls on something real is allowed and often the difference between plain and premium; a coloured glow behind nothing is still a tell. Rules and CSS are in `artefacts.md`.
 
 ## Radii
 
