@@ -34,9 +34,10 @@ Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe)
 A Motion line that someone else could build from:
 
 ```
-Motion: product tier. Signature moment: the branch panel plays a 9 s loop (branch created,
-        migration runs to 100%, check turns green), lead element the progress bar. Tabs and
-        menus 150 ms ease-out; command menu instant; nothing moves on scroll.
+Motion: product tier. Signature moment: the dispatch board plays a 9 s loop (a load is
+        assigned, its lorry crosses the route map, the delivery slot turns green), lead element
+        the lorry marker. Tabs and menus 150 ms ease-out; command menu instant; nothing moves
+        on scroll.
 ```
 
 ### Budget by frequency

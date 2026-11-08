@@ -25,15 +25,15 @@ A product mock-up is the strongest proof a software page can show, and generated
 
 - **Real markup at real size.** Text is text, not an image. Interface type is 11 to 14 px, with the product's own density: tighter spacing than the marketing page around it, tabular numbers, a mono face only where the product would use one.
 - **Enough structure to read as a product.** Navigation or a sidebar, the main view, and one detail (a panel, a row expanded, a popover). One view alone reads as a wireframe.
-- **Believable data in the domain's own vocabulary.** Identifiers with prefixes (`PR #4127`, `br-migrate-orders-7f3c`), people's first names, relative times (`2 min ago`), statuses, units and uneven figures (`1,594,294,075`, `2.3 s`, `62%`). Round numbers and "Lorem" read as fake at once. Invented names and figures are fine in a mock-up; invented customer quotes, logos and metrics presented as real are not.
-- **Caught mid-task.** Show the moment the product exists for: a migration running at 62%, a review waiting, a deploy turning green. A static, empty dashboard says nothing.
+- **Believable data in the domain's own vocabulary.** Identifiers with the product's own prefixes, people's first names, relative times, statuses, units and uneven figures: a freight tool shows `SHP-20931`, `Rotterdam`, `ETA 14:40`, `18.6 t`; a clinic rota shows `Dr Okafor`, `Ward 7B`, `3 of 11 shifts open`. Round numbers and "Lorem" read as fake at once. These examples show the form only: take every value from the subject, never from this page, or every mock-up made with this skill shares the same identifiers. Invented names and figures are fine in a mock-up; invented customer quotes, logos and metrics presented as real are not.
+- **Caught mid-task.** Show the moment the product exists for: a job part-way through, a review waiting, a check turning green. A static, empty dashboard says nothing.
 - **Its own theme if the product has one.** A dark product screen on a light page is normal; it still draws from the page's tokens for hue and neutral tint, so the two read as one brand.
 - **A frame only as heavy as the real product's.** A thin border and one lit edge usually suffice. Window controls only when the product really is a desktop app.
 - **A deliberate crop.** Let the screen bleed off the edge of the page or under the next section rather than shrinking it to fit. On a phone, show a cropped region at readable size, not the whole screen at 30%.
-- **Out of the way of assistive technology.** Give the outer element `role="img"` and an `aria-label` that says what the screen shows, and put `inert` on an inner wrapper so nothing inside is focusable. `inert` also hides its subtree from screen readers, so it must not sit on the labelled element itself.
+- **Out of the way of assistive technology.** Give the outer element `role="img"` and an `aria-label` that says what the screen shows, and put `inert` on an inner wrapper so nothing inside is focusable. `inert` also hides its subtree from screen readers, so it must not sit on the labelled element itself. A piece the visitor can operate (keys that play, a slider that changes the demo) is a working control, not a picture: leave its controls in the tab order, label the group once, and skip `role="img"` and `inert`.
 
 ```html
-<figure class="product-shot" role="img" aria-label="A pull request with its own database branch, migration 62% complete">
+<figure class="product-shot" role="img" aria-label="A dispatch board with shipment SHP-20931 en route, ETA 14:40">
   <div inert>
     <!-- sidebar, main view and one detail panel, built from the product's own density tokens -->
   </div>
@@ -44,7 +44,7 @@ A product mock-up is the strongest proof a software page can show, and generated
 
 The most premium motion on these sites is the hero piece demonstrating itself: Stripe's figure ticking, PostHog's demo panel running, an interface moving from one state to the next. It is cheap to build with CSS keyframes and a short script, and it proves the claim better than any copy.
 
-- Loop one short story (6 to 12 s) that shows the primary job happening: a branch created, a migration run, a check passing.
+- Loop one short story (6 to 12 s) that shows the primary job happening: a request arriving, the product handling it, the result landing.
 - Start only when the piece is on screen (IntersectionObserver) and pause when it leaves or the tab is hidden (`visibilitychange`).
 - Anything that moves for more than five seconds gets a visible pause control (WCAG 2.2.2).
 - Under `prefers-reduced-motion: reduce`, show one good finished frame. Never show the first, empty frame.
@@ -96,6 +96,8 @@ Starting points, all static gradients that cost almost nothing to render:
 }
 ```
 
+A spotlight or pool reads only against a dark field. On a light page the same source shows on the object instead: highlights on the edges that face it, a gradient across its top face, and a shadow cast away from it onto the page.
+
 Animating a blurred layer is expensive; move lit layers with `transform` and `opacity` only, or keep them still.
 
 ## Fidelity checklist
@@ -108,5 +110,5 @@ Run this on the rendered piece, at desktop and phone widths.
 - [ ] Light, if any, comes from one direction across the piece and the page.
 - [ ] The phone layout shows a deliberate crop at readable size.
 - [ ] The static frame looks finished without motion.
-- [ ] The piece is out of the tab order and has one accessible description.
+- [ ] A picture-like piece is out of the tab order with one accessible description; an operable piece has reachable, labelled controls.
 - [ ] Swap test: with the wordmark replaced, the piece still says which product this is.

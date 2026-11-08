@@ -151,9 +151,10 @@ For a more dramatic editorial or brand page, raise the large-screen ratio to 1.3
 ### Loading fonts
 
 - WOFF2 only, subset to the scripts you need, self-hosted or preconnected with `crossorigin`.
+- To self-host a Google Fonts family, request its CSS with a browser User-Agent header (`curl -A "Mozilla/5.0 ... Chrome/130.0 ..."`) and download the `latin` WOFF2 file it lists. Without that header the service answers with TrueType only.
 - Preload only the one or two files used above the fold.
 - Set `font-display` explicitly: `swap` for brand display text, `optional` or `fallback` for body.
-- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout.
+- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout. A linked stylesheet cannot carry this, so a page that links Google Fonts still needs its own fallback face. Two test pages built with this skill measured CLS 0.000 self-hosted with a fallback face and 0.047 linked without one.
 
 ## Layout and space
 

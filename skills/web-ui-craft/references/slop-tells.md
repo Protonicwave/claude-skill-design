@@ -17,9 +17,9 @@ Measured scale: Adrian Krebs ran deterministic checks over about 1,500 recent Sh
 Acclaimed sites use these patterns. Stripe has an indigo button and a logo row under the hero, Linear sets everything in Inter, and Mercury, Raycast and Family centre their heroes. They still look expensive, because each pattern was chosen inside a system and executed to a high standard. So the question for every pattern below is not "is it on the list?" but "would it be here on any other subject?".
 
 - **A pattern is a decision when the brief traces it to a fact about this subject** and the build carries it out properly. Inter in Linear's computed system is a decision; Inter because nothing else was considered is a default.
-- **The reason has to be specific.** "Clean", "modern", "readable" and "professional" justify anything on any page, so they do not count. "The sequencer's panel legends are screen-printed in a narrow grotesk" does.
+- **The reason has to be specific.** "Clean", "modern", "readable" and "professional" justify anything on any page, so they do not count. "The ferry company's timetables have been set in the same slab serif since 1962" does.
 - **Do not swap a default for its nearest neighbour** (Inter for Space Grotesk, indigo for teal, a purple glow for a cyan one). Telling a model to avoid a default moves it to the next most probable choice: Anthropic's model drifted to Space Grotesk when told to avoid common fonts, and by 2026 Space Grotesk, Instrument Serif and Geist were themselves listed as "LLM font combos".
-- **Any suggestion can become a default, this skill's included.** Two pages built from the same version of this skill both took the same typeface from its list of candidates. Treat everything here as examples of the principle. New defaults will appear.
+- **Any suggestion can become a default, this skill's included.** Two pages built from the same version of this skill both took the same typeface from its list of candidates, and a later product page copied the identifiers from its mock-up examples. Treat everything here as examples of the principle. New defaults will appear.
 - **Every tell the checker reports needs a decision**: change it, or say in the report what about the subject it came from.
 
 ## Whole-look clusters

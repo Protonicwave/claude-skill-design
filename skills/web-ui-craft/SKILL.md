@@ -64,7 +64,7 @@ Before building, attack it:
 
 - **Swap test.** Could a competitor's name replace this one without anyone noticing? If yes, the brief has not made its decisions yet.
 - **Per-choice test.** For every line, ask whether it could belong to any product. If it could, it must be a deliberate, well-tuned default from the build sheet below, or it must change.
-- **Convergence test.** Sketch in a few lines the brief you would write for a neighbouring subject: another tool in the same category, another maker in the same trade. Every line that comes out the same is a default, not a decision. Change it, and say in the brief what changed and why.
+- **Convergence test.** Sketch in a few lines the brief you would write for a neighbouring subject: another tool in the same category, another maker in the same trade. Every line that comes out the same is a default, not a decision. Change it, and say in the brief what changed and why. A line may stay only when it follows from a fact the two subjects share (both products are hardware, both audiences read code); name the fact.
 - **Tell check.** Compare against `references/slop-tells.md`, including the whole-look clusters. Do not swap one default for the next most common one (Inter for Space Grotesk, purple for teal). Replace it with a choice that has a reason.
 
 Revise the brief, then build.
@@ -94,7 +94,7 @@ Treat the first build as a draft.
    chrome --headless=new --hide-scrollbars --user-data-dir=<temp>/profile --window-size=1440,2600 --virtual-time-budget=4000 --screenshot=<temp>/desktop.png <file or http URL>
    ```
 
-   The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
+   The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. A piece that plays itself is caught at a random point of its loop: add `--force-prefers-reduced-motion` for the finished frame, and take one more screenshot without it to see a frame mid-loop. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
 3. Measure the page rather than estimating it. Serve it over HTTP (for a static folder, `python -m http.server` in that folder), run Lighthouse in its default mobile profile, then read the report with the budget reader:
 
    ```
