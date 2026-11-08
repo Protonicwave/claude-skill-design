@@ -176,6 +176,29 @@ LINE_RULE_CASES = [
         '<p class="uppercase tracking-widest text-xs">Features</p>',
         '<p class="text-sm">Features</p>',
     ),
+    (
+        "arrow-suffix",
+        "a.html",
+        '<a href="/start">Get started →</a>',
+        "<p>Schema change → preview branch → merge.</p>",
+    ),
+    (
+        "arrow-suffix",
+        "a.html",
+        '<button type="submit">Continue →</button>',
+        '<a href="/guide">The main → branch migration guide</a>',
+    ),
+    (
+        "arrow-suffix",
+        "a.tsx",
+        '<Link href="/docs">Read the docs <span aria-hidden="true">&rarr;</span></Link>',
+        '<Link href="/docs">Read the docs</Link>',
+    ),
+    ("arrow-suffix", "a.css", '.more::after { content: " →"; }', '.more::after { content: ""; }'),
+    ("assistant-palette", "a.css", ":root { --paper: #F4F1EA; }", ":root { --paper: #F4F1EB; }"),
+    ("assistant-palette", "a.tsx", "const clay = '#d97757';", "const clay = '#d9775f';"),
+    ("assistant-palette", "a.css", ".a { color: #d97757cc; }", ".a { color: #f4f1eaff00; }"),
+    ("assistant-palette", "a.html", '<a class="bg-[#D97757]">', '<a class="bg-[#c4673f]">'),
 ]
 
 

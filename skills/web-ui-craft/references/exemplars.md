@@ -4,17 +4,17 @@ What to learn from the most admired sites, and the aesthetic directions they rep
 
 ## Directions
 
-A named direction is a bundle of correlated decisions. Choose the one the subject calls for, then make it specific to this subject. These are starting points, not templates.
+A named direction is a bundle of correlated decisions. Choose the one the subject calls for, then make it specific to this subject. These are starting points, not templates. Each direction has a generic version it slides into when the subject stops steering; the last column names it, using the clusters in `slop-tells.md`.
 
-| Direction | Fits | Characteristic decisions |
-|---|---|---|
-| Calm product tool | Developer tools, productivity apps, dashboards | Monochrome or near-monochrome, one accent for meaning, one sans plus mono, tone-step depth, dimmed chrome, almost no motion, dense but quiet |
-| Editorial | Publications, research, cultural organisations, personal sites | Serif or characterful grotesk, large type contrast, asymmetric grid, generous measure-led layout, photography or type alone, very little colour |
-| Swiss and civic | Public services, institutions, transport, documentation | Strict grid, one grotesk, flush-left everything, strong rules and numbers, high contrast, primary colour used as signal |
-| Tactile and playful | Consumer apps, finance for people, education | Warm palette, soft but consistent radii, spatial motion from the trigger, rare celebratory moments, sound or haptics with restraint |
-| Immersive brand | Launches, studios, fashion, automotive, entertainment | One real-time or scroll-driven idea carried through, kinetic type, custom transitions, a static frame that still looks intentional |
-| Utilitarian or brutalist | Tools for experts, art and music, counter-positioning | Raw system fonts or mono by choice, visible structure, hard edges, information density as aesthetic |
-| Retro or material | Products with heritage or a physical counterpart | Palette, type and texture from a specific era or object, grain, skeuomorphic detail only where it models the real thing |
+| Direction | Fits | Characteristic decisions | Slides into |
+|---|---|---|---|
+| Calm product tool | Developer tools, productivity apps, dashboards | Monochrome or near-monochrome, one accent for meaning, one sans, mono only for code and identifiers, tone-step depth, dimmed chrome, almost no motion, dense but quiet | Near-black and acid, or the dark SaaS template |
+| Editorial | Publications, research, cultural organisations, personal sites | Serif or characterful grotesk, large type contrast, asymmetric grid, generous measure-led layout, photography or type alone, very little colour | Cream and clay, or broadsheet |
+| Swiss and civic | Public services, institutions, transport, documentation | Strict grid, one grotesk, flush-left everything, strong numbers, high contrast, primary colour used as signal | Broadsheet, with caps labels everywhere |
+| Tactile and playful | Consumer apps, finance for people, education | Warm palette, soft but consistent radii, spatial motion from the trigger, rare celebratory moments, sound or haptics with restraint | SaaS card kit in pastels |
+| Immersive brand | Launches, studios, fashion, automotive, entertainment | One real-time or scroll-driven idea carried through, kinetic type, custom transitions, a static frame that still looks intentional | Cursor spotlights, page-wide kinetic type and a decorative 3D blob with no idea behind them |
+| Utilitarian or brutalist | Tools for experts, art and music, counter-positioning | Raw system fonts or mono by choice, visible structure, hard edges, information density as aesthetic | Near-black and acid, mono on every label |
+| Retro or material | Products with heritage or a physical counterpart | Palette, type and texture from a specific era or object, grain, skeuomorphic detail only where it models the real thing | Cream and clay with grain over everything |
 
 ## Product sites
 

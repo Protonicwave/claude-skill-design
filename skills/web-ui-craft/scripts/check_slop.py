@@ -109,6 +109,7 @@ LAYOUT_PROPERTIES = (
     r"(?:max-|min-)?(?:width|height)|top|left|right|bottom|inset(?:-[a-z-]+)?"
     r"|margin(?:-[a-z-]+)?|padding(?:-[a-z-]+)?|grid-template-(?:rows|columns)"
 )
+RIGHT_ARROW = r"(?:→|&rarr;|&#8594;|&#x2192;|\\2192)"
 SATURATED_HUES = (
     r"red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple"
     r"|fuchsia|pink|rose"
@@ -249,6 +250,28 @@ LINE_RULES: tuple[LineRule, ...] = (
             "let the whole heading carry the voice through size, weight and setting",
         ),
         re.compile(r"<h[1-6]\b[^>]*>[^<]*<(?:em\b|i>|span\b[^>]*\bitalic\b)"),
+    ),
+    LineRule(
+        Rule(
+            "arrow-suffix",
+            Severity.TELL,
+            "an arrow appended to link or button text is generated template chrome",
+            "let the label say where it goes; keep an arrow only where it shows direction",
+        ),
+        re.compile(
+            rf"{RIGHT_ARROW}\s*(?:</span>\s*)?</(?:a|button|link)\s*>"
+            rf"|content\s*:\s*['\"]\s*{RIGHT_ARROW}\s*['\"]",
+            re.IGNORECASE,
+        ),
+    ),
+    LineRule(
+        Rule(
+            "assistant-palette",
+            Severity.TELL,
+            "cream #F4F1EA and terracotta #D97757 (Claude's own accent) are a generated default",
+            "take the neutral tint and the accent from the subject",
+        ),
+        re.compile(r"#(?:f4f1ea|d97757)(?:[0-9a-f]{2})?(?![0-9a-f])", re.IGNORECASE),
     ),
 )
 
