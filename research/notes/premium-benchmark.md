@@ -115,9 +115,39 @@ frontend-design's list misses two sources of default. Some effects arrive ready-
 - From frontend-design: compared layout sketches, the convergence test, type as an active element, the copy consistency rule.
 - A premium bar in the critique: compare the build with a reference site in the same direction.
 
+## 7. Before and after
+
+### Takeaway
+With the same two prompts, the revised skill produced hero pieces that hold a long look: a lit object with modelled pads and sockets, and a product screen with a sidebar, a log and a loop that plays itself. Speed did not suffer. The two pages no longer share a typeface or a mono label system. The static checker found no tells on any of the four pages, so the difference shows only in the screenshots. The rebuilds also exposed a new source of default: examples in the skill that matched the test subjects were copied into the pages.
+
+### Method
+Both pages were built on 8 November 2026 by a subagent given the verbatim prompt and the skill folder, with no access to the baseline pages or notes. The baselines used the skill at 409a764; the rebuilds used it at da61a11. Figures come from Lighthouse 13.6.0 in its default mobile profile against `python -m http.server`, read with `check_budgets.py`.
+
+| Page | LCP | CLS | Total blocking time | Script | Non-composited animations |
+|---|---|---|---|---|---|
+| Brand, before | 1392 ms | 0.092 | 0 ms | 4 KiB | 0 |
+| Brand, after | 996 ms | 0.000 | 0 ms | 5 KiB | 0 |
+| Product, before | 1396 ms | 0.015 | 0 ms | 7 KiB | 0 |
+| Product, after | 1542 ms | 0.047 | 0 ms | 5 KiB | 0 |
+
+Budgets: LCP 2500 ms, CLS 0.1, total blocking time 200 ms, script 75 KiB. All eight runs pass.
+
+### Findings
+- Brand page (Kestrel S-16). Before: a flat dark panel of amber squares, mono on every label, hairlines between sections, Schibsted Grotesk. After: the sequencer drawn as an object lit from the upper left, with bevelled pads, light leaking round the lit ones, corner screws, and a rear panel of hex-nut jacks and a five-pin MIDI socket. The headline is Archivo at 68% width and weight 800, 128 px against 11 px legends. There is no mono face, and rules appear only inside the specification table. The ground is still a pale cool grey (hue 245 against the baseline's 250), now traced to bead-blasted aluminium. Below the hero, the specification table and pre-order band carry little to look at. The builder compared the page with Teenage Engineering and named photographic light and parts detail as the largest gap, which code alone could only partly close.
+- Product page (Forkline). Before: an abstract block map in a hairline card, then a plain terminal. After: a dark product screen that bleeds off the right edge, with a pull-request sidebar, a map of 144 heap pages for production and the branch, a command log and a progress bar, playing a 10 s loop. A second piece is a bot comment on the pull request with a table of checks. Type is IBM Plex Sans at 85% width, with Plex Mono for code only, on a pale green ground taken from greenbar printer paper. The builder compared the page with Linear, named the density of detail around the hero as the largest gap, and added the sidebar to close part of it. A dark panel with a yellow accent sits near the near-black and acid cluster; the builder kept it because the page around it is light and the yellow has one meaning.
+- Self-hosting the font with a `size-adjust` fallback face gave CLS 0.000. Linking Google Fonts without a fallback face gave 0.047. Requested without a browser User-Agent, the Google Fonts stylesheet lists only TrueType files.
+- The product page used `PR #4127` and branch ids ending `7f3c`, the identifiers in `artefacts.md`. Those examples, and the motion and font-reason examples in other references, described the test subjects themselves, so the rebuilds were partly guided by them. Five such examples were replaced with unrelated subjects after these builds.
+- Builders reported four instructions they could not follow as written: the screenshot of a self-playing piece caught a random frame; the fidelity checklist required an operable hero to leave the tab order; the light guidance described only dark pages; and the convergence test did not say whether a line may stay when the two subjects share the fact behind it. Each was revised.
+
+### Inferences
+- The largest change is in the hero piece, which is where the revised skill put its effort. It came from building a piece in code to a checklist, not from new libraries or more script: both rebuilds ship 5 KiB of script.
+- Some of the gain on the product page may come from the leaked examples rather than the method, so a fresh subject would test the method more fairly.
+
 ## Gaps
 
 - Single 1440 px viewport per site; no mobile screenshots, no scroll or interaction recorded.
 - Motion evidence is from source text, not traces.
 - Russell's budgets assume a P75 device and network; no source examined splits a page's script budget between its base and a spectacle layer, so the split in web-ui-craft's brief is a judgement per page.
 - The frontend-design file is plugin version 1.1.1, as installed on 8 November 2026.
+- The before and after comparison is one build per subject per version, so the variation between runs of the same skill is unmeasured. The screenshots were judged by the skill's author, not by blind raters.
+- Neither rebuild had a browser tool, so the frame rate of each loop, keyboard walks and the brand page's sound were not checked.
