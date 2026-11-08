@@ -25,7 +25,7 @@ OKLCH is perceptually uniform: the same lightness value reads as equally light a
 
 ### Palette shape
 
-- **Mostly neutral.** Almost all of an interface is grey. Tint the neutrals toward the subject (warm for paper, food, craft; cool for engineering, finance, medical) with chroma around 0.005 to 0.02. Pure `#000` and `#fff` neutrals read as unconsidered.
+- **Mostly neutral.** Almost all of an interface is grey. Tint the neutrals toward the subject (warm for paper, food, craft; cool for engineering, finance, medical) with chroma around 0.005 to 0.02. Pure `#000` and `#fff` neutrals read as unconsidered, and so do the habitual stand-ins: cream near `#F4F1EA` and near-black `#111` are defaults of their own (see the clusters in `slop-tells.md`). Sample the tint from a real material in the subject's world rather than from "warm" or "dark".
 - **One accent** that carries meaning: primary action, selection, focus, the brand moment. If everything is accented, nothing is.
 - **Semantic colours** (danger, warning, success, info) derived from the same lightness and chroma, used only for their meaning, always paired with a non-colour cue (icon, text, position).
 - **Colour from the subject.** Take the accent and neutral tint from something true: the product's material, its place, its era, its existing brand. Never from "what looks modern".
@@ -91,7 +91,7 @@ A separate palette, not an inversion.
 
 - Use adjacent hues. Two distant hues (purple to blue, coral to violet to cyan) are the generic look.
 - At most one deliberate gradient per page, and only where it models something: light, a material, a horizon, the product's own visual.
-- A fine noise layer removes banding and adds tactility far more cheaply than WebGL:
+- A fine noise layer removes banding and adds tactility far more cheaply than WebGL. Use it where it models a material (paper, print, film, a cast surface); noise or a dot grid laid over a whole dark page is a default.
 
   ```css
   .grain { position: relative; isolation: isolate; }
@@ -105,25 +105,17 @@ A separate palette, not an inversion.
 
 ### Choosing a typeface
 
-Typography is the fastest signal of quality and of genericness. Choose by the subject's voice, not by popularity.
+Typography is the fastest signal of quality and of genericness. Choose by the subject's voice, not by popularity. This file names no recommended faces on purpose: a named list becomes the default for anything that reads it, and two pages built from an earlier list both took the same grotesk from it. A product with an established identity keeps its faces (SKILL.md, step 1); this method is for choosing new ones.
 
-1. Name the voice: editorial, technical, institutional, warm, playful, luxurious, industrial, archival, civic.
-2. Pick one family that speaks it, used decisively. A second family only when it has a distinct job (display against text, or mono for data and code).
-3. Check it against the current tells in `slop-tells.md`. Inter, Roboto, Open Sans, Lato, Arial, Poppins and the system stack are the first-wave defaults; Space Grotesk, Instrument Serif, Geist and a single italic serif or mono accent word in a sans headline are the second wave. Any of them can be right, but only with a stated reason (Linear uses Inter inside a fully computed system; that is a decision, not a default).
-4. Vary between projects. If the last three builds used the same face, the face is a habit.
+1. **Name the voice**: editorial, technical, institutional, warm, playful, luxurious, industrial, archival, civic.
+2. **Look in the subject's world first.** What are its own artefacts set in: the legends on the hardware, the signage of the place, the manuals, packaging, timetables, labels or periodicals of its trade and era? Name the quality to carry over, such as narrow and engineered, high stroke contrast, rounded terminals or a stencil cut.
+3. **Search a catalogue by that quality, not by popularity.** Filter Google Fonts by classification and properties, or browse Fontshare and foundries' free families. Skip the first screen of a popularity sort: popularity is what makes a face a default. Without catalogue access, work from memory but by the named quality, and say so in the report.
+4. **Shortlist three and set the real headline and a real paragraph in each.** Choose by looking at them, not by name.
+5. **Reject** any face listed in `slop-tells.md` without a stated reason, any face you chose for a different subject, and any face you would pick for every page in the category. Linear uses Inter inside a fully computed system; that is a decision, not a default.
+6. **One family, used decisively.** A second only when it has a distinct job: display against text, or mono for code, identifiers and figures read character by character. Mono for every label and spec is template chrome.
+7. **Write the reason in the brief**: what the face shares with the subject.
 
-Candidates by voice, all free to use (Google Fonts unless marked Fontshare). This list is a starting point for exploration, not a whitelist: overuse turns any font into a tell.
-
-| Voice | Candidates |
-|---|---|
-| Editorial, literary | Newsreader, Fraunces, Source Serif 4, Literata, Libre Caslon Text, EB Garamond, Gambetta (Fontshare) |
-| Contemporary grotesk with character | Bricolage Grotesque, Schibsted Grotesk, Familjen Grotesk, Hanken Grotesk, Onest, Switzer (Fontshare), General Sans (Fontshare) |
-| Geometric, friendly | Figtree, Outfit, Sora, Urbanist, Lexend |
-| Display, expressive | Syne, Unbounded, Big Shoulders Display, Anybody, Clash Display (Fontshare), Gloock, Bodoni Moda |
-| Technical, mono | IBM Plex Mono, Martian Mono, Azeret Mono, Red Hat Mono, Spline Sans Mono |
-| Institutional, humanist | IBM Plex Sans, Source Sans 3, Public Sans, Atkinson Hyperlegible |
-
-Variable fonts with width or optical-size axes (Fraunces, Anybody, Bricolage Grotesque, Archivo) let one family carry both display and text roles.
+A variable family with width or optical-size axes can carry both display and text roles, which gives range without a second family.
 
 ### Setting text
 
@@ -159,9 +151,10 @@ For a more dramatic editorial or brand page, raise the large-screen ratio to 1.3
 ### Loading fonts
 
 - WOFF2 only, subset to the scripts you need, self-hosted or preconnected with `crossorigin`.
+- To self-host a Google Fonts family, request its CSS with a browser User-Agent header (`curl -A "Mozilla/5.0 ... Chrome/130.0 ..."`) and download the `latin` WOFF2 file it lists. Without that header the service answers with TrueType only.
 - Preload only the one or two files used above the fold.
 - Set `font-display` explicitly: `swap` for brand display text, `optional` or `fallback` for body.
-- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout.
+- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout. A linked stylesheet cannot carry this, so a page that links Google Fonts still needs its own fallback face. Without one, every line whose width changes when the web font arrives moves the content below it.
 
 ## Layout and space
 
@@ -180,7 +173,7 @@ For a more dramatic editorial or brand page, raise the large-screen ratio to 1.3
 Order of preference: tone, then hairline, then shadow, then blur.
 
 - **Tone steps.** In dark mode, raise elevation by lightening the surface one step. In light mode, set a step-2 card on the step-1 page and separate them with a step-6 hairline. Linear's whole elevation system is lightness steps from one generator.
-- **Hairlines.** A 1 px border at neutral step 6, or a semi-transparent border (`oklch(0 0 0 / 0.08)`) that adapts to any surface. Linear's rule: "structure should be felt, not seen", so soften borders and remove separators that are not needed.
+- **Hairlines.** A 1 px border at neutral step 6, or a semi-transparent border (`oklch(0 0 0 / 0.08)`) that adapts to any surface. Linear's rule: "structure should be felt, not seen", so soften borders and remove separators that are not needed. A rule between every section is the broadsheet default: space and a change of content already mark a new section.
 - **Shadows** follow physics: one light source for the whole page, several layers that double in offset and blur, low opacity, tinted with the background hue rather than black.
 
   ```css
@@ -198,6 +191,7 @@ Order of preference: tone, then hairline, then shadow, then blur.
   Combine a shadow with a hairline border for crisp edges. Coloured glow shadows (`0 0 40px` of the accent) are a tell.
 - **Glass** only where content genuinely scrolls beneath (a sticky header over imagery). A plain `backdrop-filter` samples only what is directly behind and looks flat; extend the blurred layer to about twice the element's height and mask it, add a translucent tint, and provide an opaque fallback in `@supports not (backdrop-filter: blur(1px))`. Heavy blur costs frame rate on mid-range phones, so keep it small and few.
 - **Skeuomorphic depth** is justified when it models a real object, as Raycast's keycaps model a keyboard. Depth that models nothing is ornament.
+- **Light** is a material, separate from the surface order above. The hero of a premium page is usually lit: a spotlight on a product, a pool of light under a product screen. Light from one named source that falls on something real is allowed and often the difference between plain and premium; a coloured glow behind nothing is still a tell. Rules and CSS are in `artefacts.md`.
 
 ## Radii
 

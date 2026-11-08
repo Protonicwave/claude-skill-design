@@ -15,17 +15,23 @@ scan, so pass the whole front-end source rather than only the files changed.
 
 Limits: rules read one line at a time, so a declaration or element split over
 several lines can be missed. The scan reads text, not rendered pages, so it
-cannot judge contrast, layout or motion as experienced.
+cannot judge contrast, layout or motion as experienced. The arrow rule misses
+arrows drawn by a CSS background image or an inline SVG, and icon components
+outside the lucide and heroicons Arrow...Right names. The palette rule reads
+hex, rgb() and oklch() written with literal numbers; it misses hsl(), lab(),
+lch(), colour() and colour-mix(), percentage channels, the none keyword, and
+colours assembled through variables or calc().
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import re
 import sys
 from collections import Counter
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -62,6 +68,8 @@ class Rule:
 class LineRule:
     rule: Rule
     pattern: re.Pattern[str]
+    # A match this rejects is ignored, for rules a regular expression alone cannot decide.
+    accepts: Callable[[re.Match[str]], bool] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,10 +117,74 @@ LAYOUT_PROPERTIES = (
     r"(?:max-|min-)?(?:width|height)|top|left|right|bottom|inset(?:-[a-z-]+)?"
     r"|margin(?:-[a-z-]+)?|padding(?:-[a-z-]+)?|grid-template-(?:rows|columns)"
 )
+RIGHT_ARROW = r"(?:→|&rarr;|&#8594;|&#x2192;|\\2192)"
+# A string expression such as {"→"}, and a lucide or heroicons rightward arrow component.
+JSX_ARROW_STRING = rf"\{{\s*(?:\"{RIGHT_ARROW}\"|'{RIGHT_ARROW}')\s*\}}"
+ARROW_ICON = r"<Arrow(?:Long|Up)?Right(?:Icon)?\b[^<>]*/>"
+ASSISTANT_COLOURS = ((0xF4, 0xF1, 0xEA), (0xD9, 0x77, 0x57))
+COLOUR_TOLERANCE_PER_CHANNEL = 3
+CHANNEL_MAX = 255
+SRGB_LINEAR_CUTOFF = 0.0031308
+COLOUR_SEPARATOR = r"(?:\s*,\s*|\s+)"
+CSS_NUMBER = r"(?:\d+(?:\.\d+)?|\.\d+)(?![\d.])"
+ALPHA_VALUE = rf"{CSS_NUMBER}%?"
+ASSISTANT_PALETTE_PATTERN = re.compile(
+    r"(?P<hex>#(?:f4f1ea|d97757)(?:[0-9a-f]{2})?(?![0-9a-f]))"
+    rf"|\brgba?\(\s*(?P<r>\d{{1,3}}){COLOUR_SEPARATOR}(?P<g>\d{{1,3}}){COLOUR_SEPARATOR}"
+    rf"(?P<b>\d{{1,3}})\s*(?:[,/]\s*{ALPHA_VALUE}\s*)?\)"
+    rf"|\boklch\(\s*(?P<lightness>{CSS_NUMBER})(?P<percent>%?)\s+(?P<chroma>{CSS_NUMBER})"
+    rf"\s+(?P<hue>{CSS_NUMBER})(?:deg)?\s*(?:/\s*{ALPHA_VALUE}\s*)?\)",
+    re.IGNORECASE,
+)
 SATURATED_HUES = (
     r"red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple"
     r"|fuchsia|pink|rose"
 )
+
+
+def srgb_byte(linear: float) -> int:
+    """Encode a linear-light channel as an 8-bit sRGB value, clamped to the gamut."""
+    clamped = min(max(linear, 0.0), 1.0)
+    encoded = (
+        12.92 * clamped if clamped <= SRGB_LINEAR_CUTOFF else 1.055 * clamped ** (1 / 2.4) - 0.055
+    )
+    return round(encoded * CHANNEL_MAX)
+
+
+def oklch_to_srgb(lightness: float, chroma: float, hue_degrees: float) -> tuple[int, int, int]:
+    hue = math.radians(hue_degrees)
+    a = chroma * math.cos(hue)
+    b = chroma * math.sin(hue)
+    long = (lightness + 0.3963377774 * a + 0.2158037573 * b) ** 3
+    medium = (lightness - 0.1055613458 * a - 0.0638541728 * b) ** 3
+    short = (lightness - 0.0894841775 * a - 1.2914855480 * b) ** 3
+    return (
+        srgb_byte(4.0767416621 * long - 3.3077115913 * medium + 0.2309699292 * short),
+        srgb_byte(-1.2684380046 * long + 2.6097574011 * medium - 0.3413193965 * short),
+        srgb_byte(-0.0041960863 * long - 0.7034186147 * medium + 1.7076147010 * short),
+    )
+
+
+def is_near_assistant_colour(channels: tuple[int, int, int]) -> bool:
+    return any(
+        all(
+            abs(got - want) <= COLOUR_TOLERANCE_PER_CHANNEL
+            for got, want in zip(channels, target, strict=True)
+        )
+        for target in ASSISTANT_COLOURS
+    )
+
+
+def is_assistant_palette_match(match: re.Match[str]) -> bool:
+    if match["hex"]:
+        return True
+    if match["r"]:
+        return is_near_assistant_colour((int(match["r"]), int(match["g"]), int(match["b"])))
+    lightness = float(match["lightness"]) / (100 if match["percent"] else 1)
+    return is_near_assistant_colour(
+        oklch_to_srgb(lightness, float(match["chroma"]), float(match["hue"]))
+    )
+
 
 LINE_RULES: tuple[LineRule, ...] = (
     LineRule(
@@ -250,6 +322,30 @@ LINE_RULES: tuple[LineRule, ...] = (
         ),
         re.compile(r"<h[1-6]\b[^>]*>[^<]*<(?:em\b|i>|span\b[^>]*\bitalic\b)"),
     ),
+    LineRule(
+        Rule(
+            "arrow-suffix",
+            Severity.TELL,
+            "an arrow appended to link or button text is generated template chrome",
+            "let the label say where it goes; keep an arrow only where it shows direction",
+        ),
+        re.compile(
+            rf"(?:{RIGHT_ARROW}|{JSX_ARROW_STRING}|{ARROW_ICON})\s*(?:</span>\s*)?"
+            r"</(?:a|button|link)\s*>"
+            rf"|content\s*:\s*['\"]\s*{RIGHT_ARROW}\s*['\"]",
+            re.IGNORECASE,
+        ),
+    ),
+    LineRule(
+        Rule(
+            "assistant-palette",
+            Severity.TELL,
+            "cream #F4F1EA and terracotta #D97757 (Claude's own accent) are a generated default",
+            "take the neutral tint and the accent from the subject",
+        ),
+        ASSISTANT_PALETTE_PATTERN,
+        is_assistant_palette_match,
+    ),
 )
 
 FOCUS_REMOVED = Rule(
@@ -344,8 +440,15 @@ def check_lines(sources: Sequence[SourceFile]) -> list[Finding]:
         for source in sources
         for number, text in enumerate(source.lines, start=1)
         for line_rule in LINE_RULES
-        if line_rule.pattern.search(text)
+        if line_matches(line_rule, text)
     ]
+
+
+def line_matches(line_rule: LineRule, text: str) -> bool:
+    return any(
+        line_rule.accepts is None or line_rule.accepts(match)
+        for match in line_rule.pattern.finditer(text)
+    )
 
 
 def check_project(sources: Sequence[SourceFile]) -> list[Finding]:
