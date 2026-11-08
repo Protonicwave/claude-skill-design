@@ -29,14 +29,17 @@ Direction:    a named aesthetic and why it fits this subject (one or two lines)
 Signature:    the one idea this page is remembered for, the hero piece that carries it, and how
               that piece will be made (supplied assets, a generated image, or built in code)
 Palette:      neutral (tinted toward ...), one accent (role), semantic colours; OKLCH values
-Type:         family and role for each (display, text, mono if needed); scale ratio; body size
-Layout:       grid, measure, density, section rhythm; a rough wireframe of the first screen
+Type:         family and role for each (display, text, mono if needed) and what each shares with
+              the subject; how the display type acts in the composition; scale ratio; body size
+Layout:       two or three options for the first screen, each a one-line concept and an ASCII
+              wireframe; the one chosen and why; grid, measure, density, section rhythm
 Depth:        how surfaces separate (tone steps, hairlines, shadows), where the light comes from
               and what it falls on
 Motion:       the tier (product or brand), the signature moment and its lead element, what
               else moves and for how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
-Copy:         the headline and primary action, written for this audience
+Copy:         the headline and primary action, written for this audience; the action's name,
+              kept from button to confirmation
 Budget:       compressed script for the whole page and the share the spectacle layer may take
               (365 KiB in total by default; 75 KiB for a page with no spectacle)
 ```
@@ -48,7 +51,10 @@ Rules for the brief:
 - **Restraint is a valid direction.** A calm, type-led, monochrome system with one accent is as deliberate as a WebGL hero, and usually the right call for tools and documentation.
 - **Quiet is not bare.** Restraint limits how many ideas a page has, not how rich each one is. The signature should reward a long look: an illustration drawn for this subject, real data set out with care, texture, type at true display scale. Food, culture, consumer and brand subjects usually need imagery or illustration to carry warmth, so a type-only page for one of them needs a stated reason.
 - **The hero piece is where the effort goes.** Acclaimed sites break plenty of rules and still look expensive because one piece is made to a very high standard: a product screen with believable data, a lit object, an owned illustration. Choose and build it with `references/artefacts.md`. A rounded box with grey bars in it is not a product shot.
+- **Type is part of the composition, not a carrier for it.** At display size the setting is the design: scale against the smallest text on the page, weight, width, case, where the lines break, what the headline sits against. Linear's 64 px headline over 12 px interface text is a large part of its effect.
+- **Compare layouts before choosing one.** Sketch two or three genuinely different first screens (not one layout with the image moved) and pick by the subject's primary job. The first layout that comes to mind is usually the template.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
+- **One name per action.** The button that says "Publish" produces a confirmation that says "Published", not "Saved". The interface's vocabulary is how people find their way around it.
 
 Read `references/exemplars.md` when choosing a direction or signature, `references/visual-system.md` when setting palette, type, layout and depth, and the motion section of `references/interaction.md` when writing the Motion line.
 
@@ -58,7 +64,8 @@ Before building, attack it:
 
 - **Swap test.** Could a competitor's name replace this one without anyone noticing? If yes, the brief has not made its decisions yet.
 - **Per-choice test.** For every line, ask whether it could belong to any product. If it could, it must be a deliberate, well-tuned default from the build sheet below, or it must change.
-- **Tell check.** Compare against `references/slop-tells.md`. Do not swap one default for the next most common one (Inter for Space Grotesk, purple for teal). Replace it with a choice that has a reason.
+- **Convergence test.** Sketch in a few lines the brief you would write for a neighbouring subject: another tool in the same category, another maker in the same trade. Every line that comes out the same is a default, not a decision. Change it, and say in the brief what changed and why.
+- **Tell check.** Compare against `references/slop-tells.md`, including the whole-look clusters. Do not swap one default for the next most common one (Inter for Space Grotesk, purple for teal). Replace it with a choice that has a reason.
 
 Revise the brief, then build.
 
@@ -97,10 +104,11 @@ Treat the first build as a draft.
 
    It checks LCP (2.5 s), CLS (0.1), total blocking time (200 ms, the lab stand-in for INP), script weight against the brief, and lists every non-composited animation by element. Fix every `breach` (exit code 1). Exit code 2 means a figure is `unmeasured` or the report is unusable: rerun, and if it still fails, report the figure as unmeasured, never as passed. `http.server` does not compress, so script weight reads high, which errs on the safe side. Set `CHROME_PATH` if Lighthouse cannot find Chrome. If Node or the network is unavailable, say so in the report. Lighthouse does not measure the frame rate of the signature moment: record a performance trace with a browser tool if the session has one, and otherwise say it is unmeasured.
 4. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
-5. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
-6. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero and three identical cards.
-7. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
-8. Report the brief, what the critique changed, the measured figures against their budgets, and anything you could not verify (for example rendered contrast without a browser).
+5. Hold the page against a reference. Pick one acclaimed site in the chosen direction, one a designer in the subject's field would admire (`references/exemplars.md` names some), screenshot its first screen at 1440 px with the command in item 2, and look at the two images side by side. Compare the hero piece's fidelity, the span between the largest type and the smallest detail, how much believable detail there is, and the light. Name the largest gap and close it, or say in the report why it stays. The reference sets the bar for craft, not the look: take nothing from its surface. If the site cannot be reached, say so in the report.
+6. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
+7. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero, three identical cards and the whole-look clusters.
+8. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
+9. Report the brief, what the critique changed, the largest gap against the reference, the measured figures against their budgets, and anything you could not verify (for example rendered contrast without a browser).
 
 ## Build sheet
 

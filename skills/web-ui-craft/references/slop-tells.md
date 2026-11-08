@@ -104,6 +104,8 @@ A two-tone headline (a statement in full ink and its continuation dimmed, as on 
 |---|---|
 | "Build faster. Ship smarter.", "Unlock the power of", "Supercharge your", "seamless", "revolutionise" | Plain, specific copy that names the audience and what is different |
 | Lorem-like filler and invented testimonials | Real content, or clearly marked placeholders the user will replace |
+| A button that says one thing and a confirmation that says another ("Publish", then "Saved") | One name per action through the whole flow |
+| Errors that apologise or stay vague ("Oops, something went wrong") | What happened and how to fix it, in the interface's voice |
 | Forms with no validation, error, empty or loading states | Every state designed (see `interaction.md`) |
 | No focus rings, `outline: none` | Visible `:focus-visible` rings |
 | No reduced-motion handling | Movement behind `prefers-reduced-motion: no-preference` |

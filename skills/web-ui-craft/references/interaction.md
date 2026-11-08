@@ -284,8 +284,8 @@ Anything that moves for more than five seconds alongside other content needs a p
 - **Optimistic updates**: change the interface immediately, reconcile with the server, and on failure roll back with an explanation or offer Undo.
 - **Destructive actions** ask for confirmation or offer Undo within a safe window.
 - **Empty states** explain what will appear and offer the action that fills them.
-- **Errors** say what happened and how to fix it, next to the cause.
-- **Copy** is specific: "Save API key", not "Continue". Sentence case, active voice, from the user's side. An ellipsis character for in-progress states ("Saving…") and for menu items that open a follow-up.
+- **Errors** say what happened and how to fix it, next to the cause, in the interface's voice. They do not apologise.
+- **Copy** is specific: "Save API key", not "Continue". Sentence case, active voice, from the user's side. An action keeps one name through the whole flow: "Publish" on the button, "Publishing…" while it runs, "Published" in the confirmation. An ellipsis character for in-progress states ("Saving…") and for menu items that open a follow-up.
 - **Endings matter** (Peak-End Rule): completion, confirmation and success states deserve as much care as the hero.
 
 ## Forms
@@ -349,10 +349,12 @@ Run this on the built page, not on the plan.
 - [ ] Every colour, font, radius, shadow and spacing value comes from a token.
 - [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared.
 - [ ] The tell check in `slop-tells.md` passes, or each remaining tell has a stated reason.
+- [ ] Beside a screenshot of the reference site, the largest gap in craft is named and closed or explained.
 
 **Use**
 - [ ] Top-level navigation visible on desktop; real links; state in the URL where relevant.
 - [ ] Hover, active, focus-visible, disabled, loading, empty and error states exist and look designed.
+- [ ] Each action keeps one name from its button to its confirmation.
 - [ ] Forms: labels, types, autocomplete, 16 px inputs, errors beside fields, paste allowed.
 - [ ] Targets at least 24 px, 44 px on touch.
 
