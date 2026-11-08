@@ -18,7 +18,7 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 ## Motion
 
-Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe) are fast and quiet: routine motion takes 150 to 300 ms, and the effort goes into the hero piece demonstrating itself and into elements travelling between states. Brand sites, where the site is the experience (Lando Norris, the Awwwards winners), choreograph the scroll itself with scrubbed scenes, smooth scrolling and real-time 3D. Pick the tier from the subject, name it in the brief's Motion line, and spend the motion where that tier spends it.
+Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe) are fast and quiet: routine motion takes 120 to 300 ms, and the effort goes into the hero piece demonstrating itself and into elements travelling between states. Brand sites, where the site is the experience (Lando Norris, the Awwwards winners), choreograph the scroll itself with scrubbed scenes, smooth scrolling and real-time 3D. Pick the tier from the subject, name it in the brief's Motion line, and spend the motion where that tier spends it.
 
 ### Choose the tier
 
@@ -36,8 +36,8 @@ A Motion line that someone else could build from:
 ```
 Motion: product tier. Signature moment: the dispatch board plays a 9 s loop (a load is
         assigned, its lorry crosses the route map, the delivery slot turns green), lead element
-        the lorry marker. Tabs and menus 150 ms ease-out; command menu instant; nothing moves
-        on scroll.
+        the lorry marker. Menus 150 ms ease-out; tabs and the command menu instant; nothing
+        moves on scroll.
 ```
 
 ### Budget by frequency
@@ -63,7 +63,7 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
   --dur-1: 120ms;  /* hover, press, tooltip */
   --dur-2: 200ms;  /* dropdown, popover */
   --dur-3: 300ms;  /* modal, page transition */
-  --dur-4: 500ms;  /* drawer or sheet only */
+  --dur-4: 500ms;  /* drawer or sheet only, on a curve */
 
   /* Damped springs sampled into linear(); each shape belongs to its own duration. */
   /* Damping ratio 0.9: 95% of the way by 240 ms, overshoot 0.15%. Both tiers. */
@@ -81,7 +81,7 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
 
 ### Rules
 
-- Keep routine UI animation under 300 ms; a 180 ms select feels more responsive than a 400 ms one. Modals, sheets and page transitions take 200 to 400 ms, and only large gesture-driven sheets go up to 500 ms.
+- Keep routine UI animation under 300 ms; a 180 ms select feels more responsive than a 400 ms one. Modals, sheets and page transitions take 200 to 400 ms, and only large gesture-driven sheets go up to 500 ms. These limits are for curves. A spring's duration is the time it takes to come to rest, not to arrive: `--spring-settle` covers 95% of its distance by 240 ms, so at `--dur-settle` it reads as routine motion.
 - Use ease-out for things entering and leaving. Built-in `ease-out` is weak; use a stronger curve. Avoid `ease-in` for UI: it starts slowly and feels laggy. No visible overshoot in product UI: use `--spring-settle`, never `--spring-bounce`.
 - Animate only `transform` and `opacity`. Width, height, top, left, margin and padding trigger layout and paint and cause jank and layout shift.
 - Never `transition: all`. List the properties.
@@ -101,7 +101,7 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 - **One lead.** One element moves first and furthest and carries the eye to where it should land. Everything else follows it and moves less.
 - **Overlap, do not queue.** Followers start 40 to 80 ms apart, each before the previous one has finished. Steps that wait for each other read as slow.
 - **One curve, durations by distance.** Elements that travel further take longer; small ones are quicker. Mixing curve families looks accidental.
-- **Readable fast.** A page-load sequence is over in about 1 s, and the headline is legible within the first 300 ms. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it, or fade it with no delay.
+- **Readable fast.** A page-load sequence is over in about 1 s, and the headline is legible within the first 300 ms. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
 - **The last frame is the design.** Compose the final frame first, then the route to it. Award jurors judge whether static frames look intentional without motion, and reduced-motion users see only that frame.
 - **Once.** An entrance does not replay when the reader scrolls back or follows an anchor.
 - **The hero piece can carry it.** On the product tier the signature moment is usually the piece playing itself, built as `artefacts.md` describes; the choreography rules above apply to each step of its loop.
@@ -112,15 +112,17 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
     animation: rise var(--dur-settle) var(--spring-settle) both;
     animation-delay: calc(var(--step, 0) * 60ms);
   }
+  .hero > .lead { animation-name: arrive; }
   @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+  @keyframes arrive { from { transform: translateY(24px); } }
 }
 ```
 
-Set `--step` on each child in order, with the lead at 0. If the headline is the LCP element, it takes step 0 so it never waits at opacity 0.
+Set `--step` on each child in order, with the lead at 0. If the headline is the LCP element, it is the lead: the `lead` class moves it without fading, so it is painted in the first frame.
 
 ### Shared-element motion
 
-When something on screen changes place or state (a card opening into its detail, a tab indicator sliding to the next tab, a thumbnail becoming the hero), move it there rather than cutting. Linear and Raycast both ship this. Two recipes:
+When something on screen changes place or state (a card opening into its detail, a thumbnail becoming the hero), move it there rather than cutting. Linear and Raycast both ship this. Two recipes:
 
 **View Transitions**, for changes the browser can snapshot, including navigation between pages:
 
@@ -166,9 +168,13 @@ function flip(element, applyChange) {
   const last = element.getBoundingClientRect();
   const dx = first.left - last.left;
   const dy = first.top - last.top;
+  const style = getComputedStyle(element);
   element.animate(
     [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
-    { duration: 500, easing: getComputedStyle(element).getPropertyValue("--spring-settle") },
+    {
+      duration: parseFloat(style.getPropertyValue("--dur-settle")) || 500,
+      easing: style.getPropertyValue("--spring-settle").trim() || "ease-out",
+    },
   );
 }
 ```
@@ -221,21 +227,26 @@ The hero piece can answer the pointer: a lit object turning a few degrees toward
 
 - Fine pointers only, behind `(hover: hover) and (pointer: fine)`. Touch shows the static frame.
 - Small and damped: a few degrees of rotation or a few pixels of movement, easing toward the pointer rather than snapping to it, and back to rest when the pointer leaves.
-- Read the pointer in `pointermove`, write at most once per frame, and never read layout in the handler.
+- Read the pointer in `pointermove` and write at most once per frame. Measure the piece only when it may have moved (on the first move, and after a scroll or resize), never on every move.
 
 ```js
 const piece = document.querySelector(".hero-piece");
 const query = "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
 if (piece && matchMedia(query).matches) {
-  let box = piece.getBoundingClientRect();
+  let box = null;
+  let pointer = null;
   let frame = 0;
-  piece.addEventListener("pointerenter", () => { box = piece.getBoundingClientRect(); });
+  const forget = () => { box = null; };
+  addEventListener("scroll", forget, { passive: true });
+  addEventListener("resize", forget);
   piece.addEventListener("pointermove", (event) => {
+    pointer = event;
     if (frame) return;
     frame = requestAnimationFrame(() => {
       frame = 0;
-      piece.style.setProperty("--px", ((event.clientX - box.left) / box.width - 0.5).toFixed(3));
-      piece.style.setProperty("--py", ((event.clientY - box.top) / box.height - 0.5).toFixed(3));
+      box ??= piece.getBoundingClientRect();
+      piece.style.setProperty("--px", ((pointer.clientX - box.left) / box.width - 0.5).toFixed(3));
+      piece.style.setProperty("--py", ((pointer.clientY - box.top) / box.height - 0.5).toFixed(3));
     });
   });
   piece.addEventListener("pointerleave", () => {
