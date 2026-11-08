@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+import check_budgets
 from check_budgets import main
 
 KIB = 1024
@@ -305,3 +306,60 @@ def test_report_of_the_wrong_shape_exits_2(
 ) -> None:
     code, _ = run(tmp_path, report, capsys)
     assert code == 2
+
+
+@pytest.mark.parametrize("value", ["fast", True, None])
+def test_non_numeric_figure_is_unmeasured(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], value: object
+) -> None:
+    report = make_report(Page())
+    report["audits"]["largest-contentful-paint"]["numericValue"] = value
+    code, output = run(tmp_path, report, capsys)
+    assert code == 2
+    assert "unmeasured largest-contentful-paint: largest-contentful-paint has no numeric" in output
+
+
+def test_script_row_without_a_size_is_unmeasured(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    report = make_report(Page())
+    for item in report["audits"]["resource-summary"]["details"]["items"]:
+        if item["resourceType"] == "script":
+            del item["transferSize"]
+    code, output = run(tmp_path, report, capsys)
+    assert code == 2
+    assert "unmeasured script-weight" in output
+
+
+def test_animation_audit_without_an_element_list_is_unmeasured(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    report = make_report(Page())
+    report["audits"]["non-composited-animations"] = {
+        "scoreDisplayMode": "informative",
+        "details": {"type": "table", "items": "none"},
+    }
+    code, output = run(tmp_path, report, capsys)
+    assert code == 2
+    assert "unmeasured non-composited-animations" in output
+
+
+def test_long_element_list_is_truncated(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    animated = tuple(
+        (f"div#n{index}", "Unsupported CSS Property: width", "grow") for index in range(53)
+    )
+    code, output = run(tmp_path, make_report(Page(animated=animated)), capsys)
+    assert code == 1
+    assert "53 elements" in output
+    assert "div#n49:" in output
+    assert "div#n50:" not in output
+    assert "... and 3 more" in output
+
+
+def test_oversized_report_is_refused(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(check_budgets, "MAX_REPORT_BYTES", 100)
+    code, output = run(tmp_path, make_report(Page()), capsys)
+    assert code == 2
+    assert "over 100 bytes" in output
