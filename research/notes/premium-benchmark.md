@@ -51,6 +51,29 @@ Two kinds of premium motion. Product sites are fast and quiet and spend motion o
 - Lando Norris (Awwwards Site of the Year 2025): GSAP with ScrollTrigger, Lenis smooth scrolling, WebGL, Rive, `linear()` easing and expo curves such as `cubic-bezier(0.19, 1, 0.22, 1)`.
 - web-ui-craft's ease-out token is `cubic-bezier(0.22, 1, 0.36, 1)` and its routine durations are 120 to 300 ms, within the range Linear and Raycast ship.
 
+### Platform support for the techniques these sites use
+Checked on 8 November 2026 against the web-features data set (fetched from unpkg) and MDN's browser-compat-data, which agreed on every version below.
+
+- `linear()` easing: "allows the approximation of complex animations and transitions by interpolating linearly between the specified points". Baseline since 11 December 2023 (Chrome 113, Firefox 112, Safari 17.2), widely available since 11 June 2026. [MDN, linear()](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/easing-function/linear) A generator with spring and bounce presets exists at [linear-easing-generator.netlify.app](https://linear-easing-generator.netlify.app/).
+- Scroll-driven animations (`animation-timeline: scroll()` and `view()`, `animation-range`): Chrome and Edge 115, Firefox 159, Safari 26; Baseline only since 27 October 2026, so older browsers in use still lack them. [MDN, animation-timeline](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/animation-timeline) Chrome's guide lists "the ability to have scroll-driven animations run off the main thread". [Chrome for Developers, scroll-driven animations](https://developer.chrome.com/docs/css-ui/scroll-driven-animations) MDN warns that `animation-timeline` "is included in the animation shorthand as a reset-only value", so it must be declared after the shorthand.
+- Same-document View Transitions (`document.startViewTransition`): Baseline since 14 October 2025 (Chrome 111, Firefox 144, Safari 18). `view-transition-class` reached Baseline on the same date. [MDN, startViewTransition()](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition)
+- Cross-document View Transitions (`@view-transition { navigation: auto; }`): Chrome and Edge 126 and Safari 18.2; not in Firefox (browser-compat-data lists it as "preview"), so not Baseline. [Chrome for Developers, cross-document view transitions](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document)
+- Duplicate names: "If two rendered elements have the same `view-transition-name` at the same time, ViewTransition.ready will reject and the transition will be skipped." [MDN, Using the View Transition API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API/Using) Starting a transition while one is running skips the first: "If document's active view transition is not null, then skip that view transition". [CSS View Transitions Module Level 1](https://drafts.csswg.org/css-view-transitions-1/)
+- FLIP (Paul Lewis, 2015): "First: the initial state of the element(s) involved in the transition. Last: the final state of the element(s)." Play is to "switch on transitions for any of the properties you changed, and then remove the inversion changes". [Aerotwist, FLIP your animations](https://aerotwist.com/blog/flip-your-animations/)
+- GSAP ScrollTrigger: `pin` makes an element "appear to 'stick' in its starting position while the rest of the content continues scrolling underneath it"; `scrub`: "Links the progress of the animation directly to the scrollbar so it acts like a scrubber." [GSAP, ScrollTrigger](https://gsap.com/docs/v3/Plugins/ScrollTrigger) All of GSAP, plugins included, "can be used in commercial projects at no charge". [GSAP licensing](https://gsap.com/licensing/)
+- Pointer media features: `pointer: fine`: "The primary input mechanism includes an accurate pointing device, such as a mouse." `hover: hover`: "The primary input mechanism can conveniently hover over elements." [MDN, pointer](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/pointer); [MDN, hover](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/hover)
+- Among the elements Chromium excludes from Largest Contentful Paint: "Elements with an opacity of 0, that are invisible to the user". A headline held at opacity 0 by an animation delay is not yet counted. [web.dev, Largest Contentful Paint](https://web.dev/articles/lcp)
+
+### Spring tokens
+No source examined gives spring constants (the gap noted in `interaction-navigation-performance.md`), so web-ui-craft's two spring tokens are derived rather than cited. Each is the step response of a damped spring with mass 1, x(t) = 1 - e^(-ζωt)(cos ω_d t + (ζω/ω_d) sin ω_d t), with ω chosen so the response stays within 0.1% of its end value after the stated duration, sampled at 400 points and simplified with the Ramer-Douglas-Peucker algorithm to within 0.002.
+
+| Token | Damping ratio ζ | Duration | Stiffness | Damping | Overshoot | 95% reached |
+|---|---|---|---|---|---|---|
+| `--spring-settle` | 0.9 | 500 ms | 281 | 30.2 | 0.15% | 240 ms |
+| `--spring-bounce` | 0.6 | 800 ms | 161 | 15.2 | 9.5% | about 200 ms |
+
+The settling spring reaches 95% of its travel in about the time of a 250 ms ease-out, which keeps it inside the product sites' 150 to 300 ms range while ending without a hard stop.
+
 ## 4. Speed
 
 - The engineer skill sets measured budgets for code in general (write the figure down, commit a script that measures it) but has nothing specific to the front end: no Web Vitals, frame rate, script weight or perceived speed.
