@@ -79,6 +79,15 @@ The settling spring reaches 95% of its travel in about the time of a 250 ms ease
 - The engineer skill sets measured budgets for code in general (write the figure down, commit a script that measures it) but has nothing specific to the front end: no Web Vitals, frame rate, script weight or perceived speed.
 - web-ui-craft lists LCP, INP and CLS targets but never measures them; its checker reads source text only.
 - Lighthouse (13.6.0 on npm at the time of writing) applies 4x CPU throttling in its mobile profile and reports LCP, CLS, total blocking time, script weight and non-composited animations. It does not report the frame rate of a given animation.
+- Lighthouse colours total blocking time on mobile green ("fast") from 0 to 200 ms, orange ("moderate") from 200 to 600 ms and red ("slow") above 600 ms; the desktop bands are 0 to 150 and 150 to 350 ms. [Chrome for Developers, Total Blocking Time](https://developer.chrome.com/docs/lighthouse/performance/lighthouse-total-blocking-time)
+- Alex Russell's 2024 budget for a first load interactive within 3 s on 75th-percentile devices and networks: about 730 KiB compressed in total with up to 365 KiB of compressed JavaScript for a JavaScript-heavy site; 75 KiB of JavaScript for a markup-based one. The 5 s budget doubles these. [Infrequently Noted, The Performance Inequality Gap, 2024](https://infrequently.org/2024/01/performance-inequality-gap-2024/)
+
+Observed by running Lighthouse 13.6.0 (mobile, simulated throttling: 150 ms RTT, 1.6 Mbps, 4x CPU) against two local pages on 8 November 2026:
+
+- A navigation report has no `interaction-to-next-paint` audit, because nothing is clicked. Total blocking time is the lab measure of main-thread responsiveness.
+- `non-composited-animations` keeps a score of 1 and a display mode of "informative" while listing elements, for example `body > div#bar` with "Unsupported CSS Properties: width, box-shadow". A reader has to count the listed elements; the score never fails. With no animations the mode is "notApplicable".
+- `resource-summary` gives transfer size per resource type. Python's `http.server` sends files uncompressed, so script weight measured through it reads higher than a production server would deliver: a 196 KiB file was reported at its full size.
+- The baseline brand page (Kestrel S-16, built with the skill at 409a764) scored LCP 1.4 s, CLS 0.092, total blocking time 0 ms and 96 KiB in total. Its CLS sits just under the 0.1 budget, which no reading of the source had shown.
 
 ## 5. Implications for web-ui-craft
 
@@ -95,4 +104,5 @@ The settling spring reaches 95% of its travel in about the time of a 250 ms ease
 
 - Single 1440 px viewport per site; no mobile screenshots, no scroll or interaction recorded.
 - Motion evidence is from source text, not traces.
+- Russell's budgets assume a P75 device and network; no source examined splits a page's script budget between its base and a spectacle layer, so the split in web-ui-craft's brief is a judgement per page.
 - The frontend-design file is plugin version 1.1.1, as installed on 8 November 2026.
