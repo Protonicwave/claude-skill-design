@@ -105,13 +105,13 @@ A separate palette, not an inversion.
 
 ### Choosing a typeface
 
-Typography is the fastest signal of quality and of genericness. Choose by the subject's voice, not by popularity. This file names no recommended faces on purpose: a named list becomes the default for anything that reads it, and two pages built from an earlier list both took the same grotesk from it.
+Typography is the fastest signal of quality and of genericness. Choose by the subject's voice, not by popularity. This file names no recommended faces on purpose: a named list becomes the default for anything that reads it, and two pages built from an earlier list both took the same grotesk from it. A product with an established identity keeps its faces (SKILL.md, step 1); this method is for choosing new ones.
 
 1. **Name the voice**: editorial, technical, institutional, warm, playful, luxurious, industrial, archival, civic.
 2. **Look in the subject's world first.** What are its own artefacts set in: the legends on the hardware, the signage of the place, the manuals, packaging, timetables, labels or periodicals of its trade and era? Name the quality to carry over, such as narrow and engineered, high stroke contrast, rounded terminals or a stencil cut.
 3. **Search a catalogue by that quality, not by popularity.** Filter Google Fonts by classification and properties, or browse Fontshare and foundries' free families. Skip the first screen of a popularity sort: popularity is what makes a face a default. Without catalogue access, work from memory but by the named quality, and say so in the report.
 4. **Shortlist three and set the real headline and a real paragraph in each.** Choose by looking at them, not by name.
-5. **Reject** any face listed in `slop-tells.md` without a stated reason, any face the project's earlier builds used, and any face you would pick for every page in the category. Linear uses Inter inside a fully computed system; that is a decision, not a default.
+5. **Reject** any face listed in `slop-tells.md` without a stated reason, any face you chose for a different subject, and any face you would pick for every page in the category. Linear uses Inter inside a fully computed system; that is a decision, not a default.
 6. **One family, used decisively.** A second only when it has a distinct job: display against text, or mono for code, identifiers and figures read character by character. Mono for every label and spec is template chrome.
 7. **Write the reason in the brief**: what the face shares with the subject.
 
@@ -154,7 +154,7 @@ For a more dramatic editorial or brand page, raise the large-screen ratio to 1.3
 - To self-host a Google Fonts family, request its CSS with a browser User-Agent header (`curl -A "Mozilla/5.0 ... Chrome/130.0 ..."`) and download the `latin` WOFF2 file it lists. Without that header the service answers with TrueType only.
 - Preload only the one or two files used above the fold.
 - Set `font-display` explicitly: `swap` for brand display text, `optional` or `fallback` for body.
-- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout. A linked stylesheet cannot carry this, so a page that links Google Fonts still needs its own fallback face. Two test pages built with this skill measured CLS 0.000 self-hosted with a fallback face and 0.047 linked without one.
+- Add `size-adjust` (and `ascent-override`) to the fallback `@font-face` so the swap does not shift layout. A linked stylesheet cannot carry this, so a page that links Google Fonts still needs its own fallback face. Without one, every line whose width changes when the web font arrives moves the content below it.
 
 ## Layout and space
 

@@ -1,6 +1,6 @@
 # Hero artefacts
 
-Every acclaimed site in the benchmark carries one piece made to a very high standard, and the rest of the page stays quiet around it: Linear's product screen, Stripe's checkout and terminal, Teenage Engineering's studio-lit product, Family's illustrated cast, PostHog's whole desktop. Most of those sites use several generated-UI tells and still look expensive, because the eye lands on the piece first. A page without one looks basic however correct its type and spacing are.
+Every acclaimed site benchmarked for this skill carries one piece made to a very high standard, and the rest of the page stays quiet around it: Linear's product screen, Stripe's checkout and terminal, Teenage Engineering's studio-lit product, Family's illustrated cast, PostHog's whole desktop. Most of those sites use several generated-UI tells and still look expensive, because the eye lands on the piece first. A page without one looks basic however correct its type and spacing are.
 
 This file is how to make that piece when the work happens in code, usually with no photographs, renders or illustrations supplied.
 
@@ -62,7 +62,7 @@ Illustration reads as owned only when one hand drew all of it. In SVG:
 
 ## Light as a material
 
-Every dark premium site in the benchmark lights its hero: Teenage Engineering's spotlight and cast shadow, the pool of light under Linear's product screen, Raycast's light streaks. Light is allowed when it behaves like light:
+Every dark premium site benchmarked for this skill lights its hero: Teenage Engineering's spotlight and cast shadow, the pool of light under Linear's product screen, Raycast's light streaks. Light is allowed when it behaves like light:
 
 - **One source** for the whole page, with its direction named in the brief's Depth line. Highlights face it; shadows fall away from it.
 - **It reveals something.** Light falls on the product, the object or the type. Light behind nothing is a glow, and a glow is a tell.

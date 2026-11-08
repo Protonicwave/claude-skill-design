@@ -32,7 +32,7 @@ Windows (PowerShell; a junction needs no administrator rights):
 New-Item -ItemType Junction -Path "$HOME\.claude\skills\web-ui-craft" -Target "$PWD\skills\web-ui-craft"
 ```
 
-The skill's scripts need Python 3.11 or later and no packages. Its speed check runs `npx lighthouse@13.6.0`, so it needs Node and Chrome; without them the skill says so in its report and claims no budget as passed.
+The skill's scripts need Python 3.12 or later and no packages. Its speed check runs `npx lighthouse@13.6.0`, so it needs Node and Chrome; without them the skill says so in its report and claims no budget as passed.
 
 Claude Code picks the skill up in new sessions and uses it whenever a task involves building or restyling web UI. Invoke it directly with `/web-ui-craft`.
 

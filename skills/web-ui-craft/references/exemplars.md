@@ -4,7 +4,7 @@ What to learn from the most admired sites, and the aesthetic directions they rep
 
 ## Directions
 
-A named direction is a bundle of correlated decisions. Choose the one the subject calls for, then make it specific to this subject. These are starting points, not templates. Each direction has a generic version it slides into when the subject stops steering; the last column names it, using the clusters in `slop-tells.md`.
+A named direction is a bundle of correlated decisions. Choose the one the subject calls for, then make it specific to this subject. These are starting points, not templates. Each direction has a generic version it slides into when the subject stops steering; the last column names it, using the clusters in `slop-tells.md` where one fits.
 
 | Direction | Fits | Characteristic decisions | Slides into |
 |---|---|---|---|

@@ -81,7 +81,7 @@ Revise the brief, then build.
 
 Treat the first build as a draft.
 
-1. Run the static checker, using the skill's own directory for the script path. It needs Python 3.11 or later and no packages. Point it at the whole front-end source, not only the files you changed: the focus and reduced-motion rules look for a global style anywhere in the scan, so a partial scan reports false defects.
+1. Run the static checker, using the skill's own directory for the script path. It needs Python 3.12 or later and no packages. Point it at the whole front-end source, not only the files you changed: the focus and reduced-motion rules look for a global style anywhere in the scan, so a partial scan reports false defects.
 
    ```
    python <skill-dir>/scripts/check_slop.py <front-end source folder>
