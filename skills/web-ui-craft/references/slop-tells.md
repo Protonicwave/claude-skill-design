@@ -37,7 +37,7 @@ Generated pages tend to arrive as one of a few complete looks, where every choic
 
 ## The tells, by layer
 
-Fixing one layer leaves the others intact. Check all five. `scripts/check_slop.py` catches the ones that show up in source text (default fonts, indigo, gradient text, glow shadows, emoji icons, filler copy, "trusted by", eyebrow labels, the italic accent word, appended arrows and the cream and clay hex values). Structural ones, such as the centred badge hero or three identical cards, need a look at the rendered page.
+Fixing one layer leaves the others intact. Check all five. `scripts/check_slop.py` catches the ones that show up in source text (default fonts, indigo, gradient text, glow shadows, emoji icons, filler copy, "trusted by", eyebrow labels, the italic accent word, appended arrows written as text or a lucide or heroicons icon, and the cream and clay colours in hex, rgb() or oklch()). Structural ones, such as the centred badge hero or three identical cards, need a look at the rendered page.
 
 ### Type
 
