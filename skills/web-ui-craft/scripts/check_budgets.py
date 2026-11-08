@@ -4,17 +4,19 @@ Usage:
     python check_budgets.py REPORT [--script-kib N]
 
 REPORT is the JSON file Lighthouse writes for a mobile run (--output=json).
-Each measure prints one line starting with pass, breach or unmeasured. A figure
-equal to its budget passes. The script weight budget defaults to 365 KiB of
-transfer size and is set with --script-kib; the other budgets are fixed.
+Each measure prints one line starting with pass, breach or unmeasured. Figures
+are judged as printed, so a figure that prints equal to its budget passes. The
+script weight budget defaults to 365 KiB of transfer size and is set with
+--script-kib; the other budgets are fixed.
 Exit code 1 means a budget was breached. Exit code 2 means nothing breached but
 a measure could not be read, or the report could not be used at all (missing
-file, invalid JSON, a failed page load, a desktop run). Exit code 0 means every
+file, invalid JSON, a failed page load, a desktop or unthrottled run). Exit code 0 means every
 measure passed.
 
 Limits: reports over 50 MB are refused. At most 50 animated elements are
-listed. Budgets assume the throttled mobile profile, so desktop reports are
-rejected rather than compared.
+listed. Budgets assume the throttled mobile profile, so desktop reports and
+runs with throttling left to the caller ("provided") are rejected rather than
+compared.
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ BYTES_PER_KIB = 1024
 MAX_REPORT_BYTES = 50_000_000
 MAX_ELEMENTS_LISTED = 50
 REQUIRED_FORM_FACTOR = "mobile"
+THROTTLING_METHODS = frozenset({"simulate", "devtools"})
 
 LCP_AUDIT = "largest-contentful-paint"
 CLS_AUDIT = "cumulative-layout-shift"
@@ -74,6 +77,9 @@ class Budget:
     limit: float
     unit: str
     decimals: int
+
+    def printed(self, value: float) -> float:
+        return round(value, self.decimals)
 
     def figure(self, value: float) -> str:
         return f"{value:.{self.decimals}f}{self.unit}"
@@ -115,7 +121,7 @@ def load_report(path: Path) -> Mapping[str, object]:
     try:
         # Untyped JSON enters here; everything past this function sees narrowed types.
         report: object = json.loads(raw)
-    except ValueError as error:
+    except (ValueError, RecursionError) as error:
         raise ReportError(f"{path}: invalid JSON ({error})") from error
     if not isinstance(report, dict) or not isinstance(report.get("audits"), dict):
         raise ReportError(f"{path}: not a Lighthouse report, expected an object with audits")
@@ -129,6 +135,12 @@ def load_report(path: Path) -> Mapping[str, object]:
         raise ReportError(
             f"{path}: form factor is {form_factor!r} but budgets assume the throttled "
             f"{REQUIRED_FORM_FACTOR} profile; rerun Lighthouse without a desktop preset"
+        )
+    throttling = mapping(report.get("configSettings")).get("throttlingMethod")
+    if throttling not in THROTTLING_METHODS:
+        raise ReportError(
+            f"{path}: throttling method is {throttling!r} but budgets assume throttled "
+            "figures; rerun Lighthouse without --throttling-method=provided"
         )
     return mapping(report["audits"])
 
@@ -194,7 +206,7 @@ def read_animated_elements(
 def judge_numeric(budget: Budget, reading: float | Unmeasured) -> Outcome:
     if isinstance(reading, Unmeasured):
         return Outcome(Status.UNMEASURED, (f"{Status.UNMEASURED} {budget.name}: {reading.reason}",))
-    status = Status.WITHIN_BUDGET if reading <= budget.limit else Status.BREACH
+    status = Status.WITHIN_BUDGET if budget.printed(reading) <= budget.limit else Status.BREACH
     line = f"{status} {budget.name}: {budget.figure(reading)} (budget {budget.limit_text()})"
     return Outcome(status, (line,))
 

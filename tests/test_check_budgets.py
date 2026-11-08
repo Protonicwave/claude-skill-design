@@ -20,6 +20,7 @@ class Page:
     script_bytes: int = 120 * KIB
     animated: tuple[tuple[str, str, str], ...] = ()
     form_factor: str = "mobile"
+    throttling: str = "simulate"
 
 
 def make_report(page: Page) -> dict[str, Any]:
@@ -49,7 +50,7 @@ def make_report(page: Page) -> dict[str, Any]:
         }
     return {
         "lighthouseVersion": "13.6.0",
-        "configSettings": {"formFactor": page.form_factor, "throttlingMethod": "simulate"},
+        "configSettings": {"formFactor": page.form_factor, "throttlingMethod": page.throttling},
         "audits": {
             "largest-contentful-paint": {
                 "scoreDisplayMode": "numeric",
@@ -125,6 +126,22 @@ def test_figure_equal_to_its_budget_passes(
     report = make_report(Page(lcp_ms=2500.0, cls=0.1, tbt_ms=200.0, script_bytes=365 * KIB))
     code, _ = run(tmp_path, report, capsys)
     assert code == 0
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        Page(lcp_ms=2500.4),
+        Page(cls=0.1004),
+        Page(script_bytes=365 * KIB + 400),
+    ],
+)
+def test_breach_is_judged_at_the_printed_precision(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], page: Page
+) -> None:
+    code, output = run(tmp_path, make_report(page), capsys)
+    assert code == 0
+    assert "breach" not in output
 
 
 def test_script_budget_follows_the_brief(
@@ -235,6 +252,30 @@ def test_desktop_report_is_rejected(tmp_path: Path, capsys: pytest.CaptureFixtur
     code, output = run(tmp_path, make_report(Page(form_factor="desktop")), capsys)
     assert code == 2
     assert "mobile" in output
+
+
+@pytest.mark.parametrize("throttling", ["provided", "unknown"])
+def test_unthrottled_report_is_rejected(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], throttling: str
+) -> None:
+    code, output = run(tmp_path, make_report(Page(throttling=throttling)), capsys)
+    assert code == 2
+    assert "throttl" in output
+
+
+def test_devtools_throttling_is_accepted(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, _ = run(tmp_path, make_report(Page(throttling="devtools")), capsys)
+    assert code == 0
+
+
+def test_deeply_nested_json_exits_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = tmp_path / "report.json"
+    path.write_text("[" * 100_000 + "]" * 100_000, encoding="utf-8")
+    code = main([str(path)])
+    assert code == 2
+    assert "report.json" in capsys.readouterr().err
 
 
 def test_missing_file_exits_2_with_the_path(
