@@ -18,6 +18,27 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 ## Motion
 
+Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe) are fast and quiet: routine motion takes 150 to 300 ms, and the effort goes into the hero piece demonstrating itself and into elements travelling between states. Brand sites, where the site is the experience (Lando Norris, the Awwwards winners), choreograph the scroll itself with scrubbed scenes, smooth scrolling and real-time 3D. Pick the tier from the subject, name it in the brief's Motion line, and spend the motion where that tier spends it.
+
+### Choose the tier
+
+| | Product tier | Brand tier |
+|---|---|---|
+| Subjects | Software, tools, finance, documentation, most businesses | A launch, a person, a studio, a physical product sold as an object of desire |
+| Where motion goes | The hero piece playing itself, and elements moving between states | One scroll-driven scene, plus everything the product tier does elsewhere on the page |
+| Timing | 120 to 300 ms for interface motion; 6 to 12 s loops for the hero piece | Scrubbed to the scroll, so the reader sets the pace; entrances up to about 1 s |
+| Curves | Strong ease-out, and a settling spring with no visible overshoot | Expo ease-outs, and springs with visible overshoot |
+| Tools | CSS transitions and keyframes, View Transitions, a few lines of script | CSS scroll-driven animations; GSAP ScrollTrigger when a scene pins through several steps; WebGL in one isolated layer |
+| Benchmark | Linear, Raycast, Stripe | Lando Norris |
+
+A Motion line that someone else could build from:
+
+```
+Motion: product tier. Signature moment: the branch panel plays a 9 s loop (branch created,
+        migration runs to 100%, check turns green), lead element the progress bar. Tabs and
+        menus 150 ms ease-out; command menu instant; nothing moves on scroll.
+```
+
 ### Budget by frequency
 
 Motion is earned by how rarely something happens and how much the change needs explaining.
@@ -42,13 +63,25 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
   --dur-2: 200ms;  /* dropdown, popover */
   --dur-3: 300ms;  /* modal, page transition */
   --dur-4: 500ms;  /* drawer or sheet only */
+
+  /* Damped springs sampled into linear(); each shape belongs to its own duration. */
+  /* Damping ratio 0.9: 95% of the way by 240 ms, overshoot 0.15%. Both tiers. */
+  --spring-settle: linear(0, 0.005 1.2%, 0.023 2.8%, 0.094 6%, 0.494 18.8%, 0.591 22.2%,
+    0.67 25.5%, 0.738 28.7%, 0.795 32%, 0.845 35.5%, 0.884 39%, 0.921 43.2%, 0.95 48%,
+    0.972 53.2%, 0.986 59%, 0.995 65.5%, 1 73.5%, 1);
+  --dur-settle: 500ms;
+  /* Damping ratio 0.6: overshoots by 9% and settles back. Brand tier and playful subjects only. */
+  --spring-bounce: linear(0, 0.008 1.2%, 0.029 2.5%, 0.123 5.5%, 0.244 8.2%, 0.65 16.5%,
+    0.848 21.5%, 0.918 23.8%, 0.98 26.2%, 1.026 28.7%, 1.062 31.5%, 1.077 33.2%, 1.088 35.2%,
+    1.094 37.5%, 1.094 39.8%, 1.081 44.8%, 1.019 58.8%, 0.998 67%, 0.993 72%, 0.991 78%, 1);
+  --dur-bounce: 800ms;
 }
 ```
 
 ### Rules
 
 - Keep routine UI animation under 300 ms; a 180 ms select feels more responsive than a 400 ms one. Modals, sheets and page transitions take 200 to 400 ms, and only large gesture-driven sheets go up to 500 ms.
-- Use ease-out for things entering and leaving. Built-in `ease-out` is weak; use a stronger curve. Avoid `ease-in` for UI: it starts slowly and feels laggy. Avoid bounce and elastic easing in product UI.
+- Use ease-out for things entering and leaving. Built-in `ease-out` is weak; use a stronger curve. Avoid `ease-in` for UI: it starts slowly and feels laggy. No visible overshoot in product UI: use `--spring-settle`, never `--spring-bounce`.
 - Animate only `transform` and `opacity`. Width, height, top, left, margin and padding trigger layout and paint and cause jank and layout shift.
 - Never `transition: all`. List the properties.
 - Never animate from `scale(0)`. Start from 0.9 to 0.97 with opacity 0.
@@ -57,15 +90,172 @@ Family's rule, "mastering delight is mastering selective emphasis": confetti onl
 - In a group of tooltips, delay the first; once one is open, neighbours open instantly with no animation.
 - Animations must be interruptible. Prefer CSS transitions (which retarget mid-flight) over keyframes for interactive state.
 - Spatial consistency: things should come from where they were summoned and return there. Family's "we fly instead of teleport".
-- Gestures apply their movement directly (the sheet follows the finger) rather than playing a canned animation after a threshold. Destructive gesture actions commit on release, not mid-gesture.
-- One orchestrated page-load sequence (staggered by 40 to 80 ms) beats scattered effects on every element.
-- Scroll-triggered reveals on every section are a template habit. Use them only where they pace a story.
+- Gestures apply their movement directly (the sheet follows the finger) rather than playing a canned animation after a threshold, and the motion after release carries the gesture's velocity, which needs a JavaScript spring (Motion's `type: "spring"`), not a CSS curve. Destructive gesture actions commit on release, not mid-gesture.
 - Content is visible before any script runs. A section hidden until an observer reveals it stays blank on slow devices, in print, to crawlers and in full-page screenshots. Reveal by enhancing visible content (add the hidden starting state from script, then animate), never by hiding it in the stylesheet.
-- View Transitions (`document.startViewTransition`, or `@view-transition { navigation: auto; }` for multi-page sites) give shared-element continuity without a single-page framework. Feature-detect and respect reduced motion.
+
+### The signature moment
+
+The one rare moment that gets rich motion, usually the hero on first view, is choreographed like a short film rather than switched on.
+
+- **One lead.** One element moves first and furthest and carries the eye to where it should land. Everything else follows it and moves less.
+- **Overlap, do not queue.** Followers start 40 to 80 ms apart, each before the previous one has finished. Steps that wait for each other read as slow.
+- **One curve, durations by distance.** Elements that travel further take longer; small ones are quicker. Mixing curve families looks accidental.
+- **Readable fast.** A page-load sequence is over in about 1 s, and the headline is legible within the first 300 ms. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it, or fade it with no delay.
+- **The last frame is the design.** Compose the final frame first, then the route to it. Award jurors judge whether static frames look intentional without motion, and reduced-motion users see only that frame.
+- **Once.** An entrance does not replay when the reader scrolls back or follows an anchor.
+- **The hero piece can carry it.** On the product tier the signature moment is usually the piece playing itself, built as `artefacts.md` describes; the choreography rules above apply to each step of its loop.
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .hero > * {
+    animation: rise var(--dur-settle) var(--spring-settle) both;
+    animation-delay: calc(var(--step, 0) * 60ms);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
+}
+```
+
+Set `--step` on each child in order, with the lead at 0. If the headline is the LCP element, it takes step 0 so it never waits at opacity 0.
+
+### Shared-element motion
+
+When something on screen changes place or state (a card opening into its detail, a tab indicator sliding to the next tab, a thumbnail becoming the hero), move it there rather than cutting. Linear and Raycast both ship this. Two recipes:
+
+**View Transitions**, for changes the browser can snapshot, including navigation between pages:
+
+```js
+function transition(applyChange) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!document.startViewTransition || reduce) {
+    applyChange();
+    return;
+  }
+  document.startViewTransition(applyChange);
+}
+```
+
+```js
+// The clicked card carries the name in the old snapshot, the open detail in the new one.
+card.style.viewTransitionName = "active-card";
+transition(() => {
+  card.style.viewTransitionName = "";
+  openDetail(card);
+});
+```
+
+```css
+.detail { view-transition-name: active-card; }  /* display: none until opened */
+::view-transition-group(active-card) {
+  animation-duration: var(--dur-settle);
+  animation-timing-function: var(--spring-settle);
+}
+```
+
+- A `view-transition-name` must be unique among rendered elements when each snapshot is taken, or the transition is skipped. Give it to the one element involved, not to every card.
+- For multi-page sites, `@view-transition { navigation: auto; }` in both pages' CSS gives the same continuity on ordinary links. Wrap it in `@media (prefers-reduced-motion: no-preference)`. Chromium and Safari support it; other browsers navigate normally, which is the right fallback.
+- A view transition cannot be reversed halfway: starting another one skips the first to its end. For motion the user can reverse mid-flight, use FLIP.
+
+**FLIP** (First, Last, Invert, Play), for changes inside a component or anything that must stay interruptible: measure the element, apply the change, then animate from the old position to the new one with a transform.
+
+```js
+function flip(element, applyChange) {
+  const first = element.getBoundingClientRect();
+  applyChange();
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const last = element.getBoundingClientRect();
+  const dx = first.left - last.left;
+  const dy = first.top - last.top;
+  element.animate(
+    [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
+    { duration: 500, easing: getComputedStyle(element).getPropertyValue("--spring-settle") },
+  );
+}
+```
+
+Translating is exact. Scaling to cover a size change also stretches text and corner radii, so when the size changes, keep the text in a child that fades in after the box has landed.
+
+### Scroll-linked motion
+
+On the product tier, nothing moves with the scroll unless it explains something, such as a reading-progress bar. Scroll-triggered reveals on every section are a template habit. On the brand tier, one scene can follow the scroll, and it should be scrubbed (its progress tied to scroll position, so the reader can stop it and run it backwards) rather than triggered.
+
+CSS scroll-driven animations drive a keyframe animation from scroll position instead of time, with no script. A reveal tied to the element's own passage through the viewport:
+
+```css
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scene-step {
+      animation: rise linear both;
+      animation-timeline: view();         /* after the shorthand, which resets it */
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}
+```
+
+A pinned, scrubbed scene: a tall section with a sticky stage, the stage's animation driven by the section's passage through the viewport.
+
+```css
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scene { height: 300vh; view-timeline-name: --scene; }
+    .scene-stage { position: sticky; top: 0; height: 100vh; }
+    .scene-object {
+      animation: turn linear both;
+      animation-timeline: --scene;
+      animation-range: contain 0% contain 100%;
+    }
+  }
+}
+```
+
+- The height and the pinning sit inside the same `@supports` block, so a browser without support shows the scene at its rest frame at normal height rather than 300vh of empty scroll.
+- Each frame of the scene, including the first and the last, reads correctly on its own, because the reader can stop anywhere.
+- Animate `transform` and `opacity` only, so the compositor can run the animation off the main thread.
+- When a scene needs several pinned steps with labels, snapping, or more control than CSS gives, use GSAP's ScrollTrigger (`pin: true`, `scrub: true`). It ships as JavaScript and counts against the spectacle budget.
+- Smooth-scroll libraries (Lenis on Lando Norris) belong to the brand tier only. They replace the browser's own scrolling, so test keyboard scrolling, find in page and anchor links after adding one.
+
+### Pointer response
+
+The hero piece can answer the pointer: a lit object turning a few degrees toward it, light moving across a surface. This is the object responding, not the page: a glow that trails the cursor across every card is decoration.
+
+- Fine pointers only, behind `(hover: hover) and (pointer: fine)`. Touch shows the static frame.
+- Small and damped: a few degrees of rotation or a few pixels of movement, easing toward the pointer rather than snapping to it, and back to rest when the pointer leaves.
+- Read the pointer in `pointermove`, write at most once per frame, and never read layout in the handler.
+
+```js
+const piece = document.querySelector(".hero-piece");
+const query = "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+if (piece && matchMedia(query).matches) {
+  let box = piece.getBoundingClientRect();
+  let frame = 0;
+  piece.addEventListener("pointerenter", () => { box = piece.getBoundingClientRect(); });
+  piece.addEventListener("pointermove", (event) => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      piece.style.setProperty("--px", ((event.clientX - box.left) / box.width - 0.5).toFixed(3));
+      piece.style.setProperty("--py", ((event.clientY - box.top) / box.height - 0.5).toFixed(3));
+    });
+  });
+  piece.addEventListener("pointerleave", () => {
+    piece.style.setProperty("--px", "0");
+    piece.style.setProperty("--py", "0");
+  });
+}
+```
+
+```css
+.hero-piece {
+  transform: perspective(1200px) rotateY(calc(var(--px, 0) * 6deg)) rotateX(calc(var(--py, 0) * -6deg));
+  transition: transform var(--dur-settle) var(--spring-settle);
+}
+```
+
+The transition retargets on every update, which is what makes the piece ease toward the pointer.
 
 ### Reduced motion
 
-Colour and opacity changes do not count as motion under WCAG 2.3.3; translation, scaling and parallax do. Keep the flourish and remove the movement:
+Colour and opacity changes do not count as motion under WCAG 2.3.3; translation, scaling, parallax and scroll-scrubbed movement do. Keep the flourish and remove the movement:
 
 ```css
 .panel {
@@ -164,6 +354,10 @@ Run this on the built page, not on the plan.
 - [ ] Targets at least 24 px, 44 px on touch.
 
 **Motion**
+- [ ] The page moves like its tier: no scroll choreography on the product tier; product-tier rules everywhere outside the brand tier's scene.
+- [ ] The signature moment has one lead, overlapping followers and a last frame that looks finished on its own.
+- [ ] Elements that change place between states travel there instead of cutting.
+- [ ] Scroll-linked and pointer motion sit behind `@supports` and `prefers-reduced-motion: no-preference`, and the page reads correctly without them.
 - [ ] No `transition: all`, no `scale(0)`, no layout-property animation.
 - [ ] Frequent and keyboard actions are instant.
 - [ ] `prefers-reduced-motion` handled; flourishes fall back to opacity.

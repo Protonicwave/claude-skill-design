@@ -33,7 +33,8 @@ Type:         family and role for each (display, text, mono if needed); scale ra
 Layout:       grid, measure, density, section rhythm; a rough wireframe of the first screen
 Depth:        how surfaces separate (tone steps, hairlines, shadows), where the light comes from
               and what it falls on
-Motion:       what moves, how long, and what deliberately does not
+Motion:       the tier (product or brand), the signature moment and its lead element, what
+              else moves and for how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
 Copy:         the headline and primary action, written for this audience
 ```
@@ -47,7 +48,7 @@ Rules for the brief:
 - **The hero piece is where the effort goes.** Acclaimed sites break plenty of rules and still look expensive because one piece is made to a very high standard: a product screen with believable data, a lit object, an owned illustration. Choose and build it with `references/artefacts.md`. A rounded box with grey bars in it is not a product shot.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
 
-Read `references/exemplars.md` when choosing a direction or signature, and `references/visual-system.md` when setting palette, type, layout and depth.
+Read `references/exemplars.md` when choosing a direction or signature, `references/visual-system.md` when setting palette, type, layout and depth, and the motion section of `references/interaction.md` when writing the Motion line.
 
 ## 3. Challenge the brief
 
@@ -110,7 +111,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Depth | Tone steps and hairline borders first; shadows layered, one light source, tinted with the surface hue |
 | Radii | Two or three values; nested radius = outer radius minus padding |
 | Icons | One family, one grid, one stroke width; no emoji as interface icons |
-| Motion | Routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
+| Motion | Tier named in the brief; routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out or a settling spring, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
 | Navigation | Visible top-level links on desktop, up to four visible on mobile, UI state in the URL |
 | Loading | Nothing under about 1 s; delay indicators 150 to 300 ms, then show for at least 300 to 500 ms |
 | Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; visible response to input within 100 ms |

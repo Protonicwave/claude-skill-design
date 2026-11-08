@@ -48,7 +48,8 @@ The most premium motion on these sites is the hero piece demonstrating itself: S
 - Start only when the piece is on screen (IntersectionObserver) and pause when it leaves or the tab is hidden (`visibilitychange`).
 - Anything that moves for more than five seconds gets a visible pause control (WCAG 2.2.2).
 - Under `prefers-reduced-motion: reduce`, show one good finished frame. Never show the first, empty frame.
-- Timings and easing follow `interaction.md`.
+- Each step of the loop is choreographed as "The signature moment" in `interaction.md` describes: one lead element, followers overlapping 40 to 80 ms behind it, and a settling spring for anything that changes place.
+- If the piece answers the pointer, follow "Pointer response" in `interaction.md`.
 
 ## Illustration in one hand
 
