@@ -20,7 +20,7 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["skills/web-ui-craft/scripts"]
+pythonpath = ["skills/web-ui-craft/scripts", "bench"]
 
 [tool.ruff]
 line-length = 100
@@ -29,7 +29,7 @@ line-length = 100
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S", "PT", "N", "C90", "PLR"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["check_budgets", "check_slop"]
+known-first-party = ["capture", "check_budgets", "check_slop"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -40,5 +40,10 @@ max-complexity = 10
 
 [tool.mypy]
 strict = true
-files = ["skills", "tests"]
-mypy_path = "skills/web-ui-craft/scripts"
+files = ["skills", "bench", "tests"]
+mypy_path = "skills/web-ui-craft/scripts:bench"
+
+# axe-playwright-python ships no type information.
+[[tool.mypy.overrides]]
+module = ["axe_playwright_python.*"]
+ignore_missing_imports = true

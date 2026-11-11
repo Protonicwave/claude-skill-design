@@ -14,6 +14,7 @@ Most of the effort goes into one hero piece built in code to a fidelity checklis
 - `skills/web-ui-craft/references/`: detail loaded on demand.
 - `skills/web-ui-craft/scripts/check_slop.py`: static scan for craft defects and generic tells.
 - `skills/web-ui-craft/scripts/check_budgets.py`: compares a Lighthouse report with the page budgets.
+- `bench/capture.py`: captures a built page for the design bench and checks how it functions.
 - `research/`: the report and notes every rule is drawn from, with sources. `research/notes/premium-benchmark.md` records two test pages built with the skill before and after its premium revision.
 
 ## Install
@@ -45,5 +46,17 @@ uv sync
 uv run pytest
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
-uv run vulture skills tests --min-confidence 80
+uv run vulture skills bench tests --min-confidence 80
 ```
+
+The capture tests drive the installed Chrome and skip when it cannot be started. The Lighthouse test also needs Node.
+
+## Design bench
+
+The bench compares pages built with and without the skill. Capture one build, a folder holding `index.html`:
+
+```sh
+uv run python bench/capture.py path/to/build path/to/out
+```
+
+`out` receives desktop (1440 by 900) and phone (375 by 812) screenshots: the first screen, frames at 0.25, 0.75, 1.5 and 3 s after navigation, three scroll depths, the full page and the first screen with reduced motion. It also receives `function.json`, recording axe violations, a keyboard walk, phone overflow, console errors, failed requests and head tags. `--lighthouse` adds a mobile Lighthouse run judged by `check_budgets.py`. The script prints its elapsed time beside the 90 s budget for one capture without Lighthouse.
