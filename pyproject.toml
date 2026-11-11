@@ -44,6 +44,8 @@ max-complexity = 10
 strict = true
 files = ["skills", "bench", "tests"]
 mypy_path = "skills/web-ui-craft/scripts:bench"
+# Bench rounds copy each arm's skill, scripts included, into this ignored folder.
+exclude = ["^bench/runs/"]
 
 # axe-playwright-python ships no type information.
 [[tool.mypy.overrides]]
