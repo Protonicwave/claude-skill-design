@@ -108,7 +108,7 @@ Skill: none
 Read: bench/runs/<round>/arms/<arm>/SKILL.md, and follow it as your instructions, resolving its relative paths inside that folder. (Bare arm: nothing.)
 Change: create files in bench/runs/<round>/builds/<id>/ only.
 Done when: the folder holds index.html, the page opens without console errors, and your reply names every skill or file you read.
-Constraints: Do not use the Skill tool. Read no other file in the repository, and no other build.
+Constraints: Do not use the Skill tool. Read any file in your arm's folder and no other file in the repository, and no other build. Keep scratch files in a folder named <id> inside your scratchpad, since other builders share it.
 Ruled out: nothing.
 
 <subject prompt>
