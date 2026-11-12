@@ -59,7 +59,14 @@ from playwright.sync_api import Browser, FloatRect, Page, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-CAPTURE_BUDGET_SECONDS = 90.0
+from views import (
+    CAPTURE_BUDGET_SECONDS,
+    MOTION_FRAME_SECONDS,
+    SCROLL_DEPTHS_PERCENT,
+    motion_image,
+    scroll_image,
+)
+
 DEFAULT_LOAD_TIMEOUT_SECONDS = 30.0
 ACTION_TIMEOUT_SECONDS = 30.0
 MAX_TAB_STOPS = 200
@@ -71,8 +78,6 @@ FIRST_HTTP_ERROR_STATUS = 400
 LIGHTHOUSE_TIMEOUT_SECONDS = 180.0
 CHECK_BUDGETS_TIMEOUT_SECONDS = 60.0
 TASKKILL_TIMEOUT_SECONDS = 10.0
-MOTION_FRAME_SECONDS = (0.25, 0.75, 1.5, 3.0)
-SCROLL_DEPTHS_PERCENT = (25, 50, 75)
 
 LIGHTHOUSE_PACKAGE = "lighthouse@13.6.0"
 CHECK_BUDGETS = (
@@ -298,7 +303,7 @@ def _shoot_motion_strip(
         wait_ms = (committed_at + seconds - time.monotonic()) * 1000
         if wait_ms > 0:
             page.wait_for_timeout(wait_ms)
-        name = f"{prefix}-motion-{seconds}s.png"
+        name = motion_image(prefix, seconds)
         page.screenshot(path=out / name)
         taken_at[name] = round(time.monotonic() - committed_at, 2)
     return taken_at
@@ -316,7 +321,7 @@ def _shoot_scroll(page: Page, out: Path, prefix: str) -> None:
     for percent in SCROLL_DEPTHS_PERCENT:
         _scroll_to(page, percent / 100)
         page.wait_for_timeout(SCROLL_SETTLE_MS)
-        page.screenshot(path=out / f"{prefix}-scroll-{percent}.png")
+        page.screenshot(path=out / scroll_image(prefix, percent))
     # A pass to the foot of the page triggers reveal-on-scroll content before
     # the full-page shot, which would otherwise show it in its hidden state.
     for _ in range(MAX_SCROLL_STEPS):

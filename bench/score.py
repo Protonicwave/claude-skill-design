@@ -29,8 +29,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from capture import CAPTURE_BUDGET_SECONDS
 from pairs import CHOICES, CRITERIA, Build, Choice, Key, Pair, RoundError, load_key, read_json
+from views import CAPTURE_BUDGET_SECONDS
 
 SERIOUS_IMPACTS = frozenset({"serious", "critical"})
 RESOURCE_ERROR_PREFIX = "Failed to load resource"

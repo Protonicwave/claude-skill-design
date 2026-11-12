@@ -14,6 +14,7 @@ from playwright.sync_api import Error as PlaywrightError
 
 import capture
 from capture import Budgets, main, run_lighthouse
+from views import CAPTURE_BUDGET_SECONDS
 
 CLEAN_PAGE = """<!doctype html>
 <html lang="en">
@@ -465,4 +466,4 @@ def test_walk_stops_at_the_tab_stop_limit(endless: dict[str, Any]) -> None:
 
 def test_page_that_grows_on_scroll_is_captured(endless: dict[str, Any]) -> None:
     assert endless["timed_out_loads"] == []
-    assert endless["elapsed_seconds"] < capture.CAPTURE_BUDGET_SECONDS
+    assert endless["elapsed_seconds"] < CAPTURE_BUDGET_SECONDS

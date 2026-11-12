@@ -46,23 +46,19 @@ from pathlib import Path
 from string import Template
 from typing import Any, Literal
 
+from views import MOTION_FRAME_SECONDS, SCROLL_DEPTHS_PERCENT, motion_image, scroll_image
+
 Choice = Literal["A", "B", "tie"]
 CHOICES: tuple[Choice, ...] = ("A", "B", "tie")
 CRITERIA = ("first_screen", "whole_page", "imagery", "type", "motion", "fit", "overall")
 JUDGED_IMAGES = (
     "desktop-first.png",
     "desktop-full.png",
-    "desktop-scroll-25.png",
-    "desktop-scroll-50.png",
-    "desktop-scroll-75.png",
-    "desktop-motion-0.25s.png",
-    "desktop-motion-0.75s.png",
-    "desktop-motion-1.5s.png",
-    "desktop-motion-3.0s.png",
+    *(scroll_image("desktop", percent) for percent in SCROLL_DEPTHS_PERCENT),
+    *(motion_image("desktop", seconds) for seconds in MOTION_FRAME_SECONDS),
     "phone-first.png",
     "phone-full.png",
 )
-MOTION_IMAGES = JUDGED_IMAGES[5:9]
 MAX_BUILDS = 200
 MIN_ARMS = 2
 DEFAULT_VOTES = 10
@@ -436,10 +432,8 @@ def _figure(token: str, name: str, caption: str, page: str) -> str:
 
 def _vote_page_column(token: str, page: str) -> str:
     motion = "".join(
-        _figure(
-            token, name, f"{name.removeprefix('desktop-motion-')[:-5]} s after navigation", page
-        )
-        for name in MOTION_IMAGES
+        _figure(token, motion_image("desktop", seconds), f"{seconds} s after navigation", page)
+        for seconds in MOTION_FRAME_SECONDS
     )
     desktop_full = _figure(token, "desktop-full.png", "desktop whole page", page)
     phone_full = _figure(token, "phone-full.png", "phone whole page", page)
