@@ -36,8 +36,9 @@ Layout:       two or three options for the first screen, each a one-line concept
               wireframe; the one chosen and why; grid, measure, density, section rhythm
 Depth:        how surfaces separate (tone steps, hairlines, shadows), where the light comes from
               and what it falls on
-Motion:       the tier (product or brand), the signature moment and its lead element, what
-              else moves and for how long, and what deliberately does not
+Motion:       the tier (product or brand), the signature moment, its lead element and the
+              movement of the subject it shows, the complete frame it opens on, what else
+              moves and for how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
 Copy:         the headline and primary action, written for this audience; the action's name,
               kept from button to confirmation
@@ -130,7 +131,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Depth | Tone steps and hairline borders first; shadows layered, one light source, tinted with the surface hue |
 | Radii | Two or three values; nested radius = outer radius minus padding |
 | Icons | One family, one grid, one stroke width; no emoji as interface icons |
-| Motion | Tier named in the brief; routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out or a settling spring, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
+| Motion | Tier named in the brief; a signature movement taken from the subject; first screen complete in its first frame and at rest by 1.5 s; routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out or a settling spring, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
 | Navigation | Visible top-level links on desktop, up to four visible on mobile, UI state in the URL |
 | Loading | Nothing under about 1 s; delay indicators 150 to 300 ms, then show for at least 300 to 500 ms |
 | Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; lab total blocking time at most 200 ms; script within the brief's budget; visible response to input within 100 ms |

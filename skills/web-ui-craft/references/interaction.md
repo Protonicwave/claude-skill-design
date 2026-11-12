@@ -20,6 +20,8 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe) are fast and quiet: routine motion takes 120 to 300 ms, and the effort goes into the hero piece demonstrating itself and into elements travelling between states. Brand sites, where the site is the experience (Lando Norris, the Awwwards winners), choreograph the scroll itself with scrubbed scenes, smooth scrolling and real-time 3D. Pick the tier from the subject, name it in the brief's Motion line, and spend the motion where that tier spends it.
 
+Every page gets one signature movement, a quiet page included, and it is a movement the subject makes in its own world: a parcel travelling its route, a print head laying down a line, the needle of a scale settling, a departure board flipping to the next train. On a restrained page it can be small, a figure ticking once or a mark drawing itself, but it still comes from the subject. A fade or slide applied to every block belongs to no subject: put the Motion line through the swap test, and if a neighbouring product could keep it unchanged, the movement has not been chosen yet.
+
 ### Choose the tier
 
 | | Product tier | Brand tier |
@@ -34,10 +36,10 @@ Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe)
 A Motion line that someone else could build from:
 
 ```
-Motion: product tier. Signature moment: the dispatch board plays a 9 s loop (a load is
-        assigned, its lorry crosses the route map, the delivery slot turns green), lead element
-        the lorry marker. Menus 150 ms ease-out; tabs and the command menu instant; nothing
-        moves on scroll.
+Motion: product tier. Signature moment: the dispatch board opens complete, every load
+        placed, then plays a 9 s loop (a load is assigned, its lorry crosses the route map,
+        the delivery slot turns green), lead element the lorry marker. Menus 150 ms ease-out;
+        tabs and the command menu instant; nothing moves on scroll.
 ```
 
 ### Budget by frequency
@@ -101,7 +103,7 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 - **One lead.** One element moves first and furthest and carries the eye to where it should land. Everything else follows it and moves less.
 - **Overlap, do not queue.** Followers start 40 to 80 ms apart, each before the previous one has finished. Steps that wait for each other read as slow.
 - **One curve, durations by distance.** Elements that travel further take longer; small ones are quicker. Mixing curve families looks accidental.
-- **Readable fast.** A page-load sequence is over in about 1 s, and the headline is legible within the first 300 ms. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
+- **Readable fast.** A page-load sequence is over in about 1 s and at rest by 1.5 s at the latest, and the headline is legible within the first 300 ms. Every piece of the first screen is present and readable in the first frame; the entrance moves things into place, it does not build them up. A chart still drawing its axes or a table still filling its rows after 1.5 s reads as loading, not as design. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
 - **The last frame is the design.** Compose the final frame first, then the route to it. Award jurors judge whether static frames look intentional without motion, and reduced-motion users see only that frame.
 - **Once.** An entrance does not replay when the reader scrolls back or follows an anchor.
 - **The hero piece can carry it.** On the product tier the signature moment is usually the piece playing itself, built as `artefacts.md` describes; the choreography rules above apply to each step of its loop.
@@ -372,6 +374,8 @@ Run this on the built page, not on the plan.
 
 **Motion**
 - [ ] The page moves like its tier: no scroll choreography on the product tier; product-tier rules everywhere outside the brand tier's scene.
+- [ ] The signature movement is one the subject makes, not a fade applied to every block.
+- [ ] The first screen is complete and readable in its first frame and at rest by 1.5 s; a looping piece opens on a finished frame.
 - [ ] The signature moment has one lead, overlapping followers and a last frame that looks finished on its own.
 - [ ] Elements that change place between states travel there instead of cutting.
 - [ ] Scroll-linked and pointer motion sit behind `@supports` and `prefers-reduced-motion: no-preference`, and the page reads correctly without them.
