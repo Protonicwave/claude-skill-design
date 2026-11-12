@@ -16,6 +16,7 @@ Before any visual choice, establish:
 - **Subject**: what the product, organisation or content actually is, and the world it belongs to (its industry, materials, vocabulary, artefacts).
 - **Audience**: who arrives, what they already know, which device they are likely on.
 - **Primary job**: the one thing the page or screen must get done. Everything else is subordinate to it.
+- **Page or tool**: whether the page tells people about something, or is the tool they work in (a dashboard, console, queue or admin screen). For a tool, read `references/app-screens.md` before the brief: it changes what the Signature, Copy and Motion lines mean.
 - **Existing constraints**: brand assets, an existing design system, tokens, component library or framework in the repository. If tokens exist, use them and apply this skill within them. Do not impose a new identity on an established product unless asked.
 
 If the user gave little to go on, infer from the subject and state your assumptions in the brief rather than asking a list of questions.
@@ -105,7 +106,7 @@ Treat the first build as a draft.
    It checks LCP (2.5 s), CLS (0.1), total blocking time (200 ms, the lab stand-in for INP), script weight against the brief, and lists every non-composited animation by element. Fix every `breach` (exit code 1). Exit code 2 means a figure is `unmeasured` or the report is unusable: rerun, and if it still fails, report the figure as unmeasured, never as passed. `http.server` does not compress, so script weight reads high, which errs on the safe side. Set `CHROME_PATH` if Lighthouse cannot find Chrome. If Node or the network is unavailable, say so in the report. Lighthouse does not measure the frame rate of the signature moment: record a performance trace with a browser tool if the session has one, and otherwise say it is unmeasured.
 4. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
 5. Hold the page against a reference. Pick one acclaimed site in the chosen direction, one a designer in the subject's field would admire (`references/exemplars.md` names some), screenshot its first screen at 1440 px with the command in item 2, and look at the two images side by side. Compare the hero piece's fidelity, the span between the largest type and the smallest detail, how much believable detail there is, and the light. Name the largest gap and close it, or say in the report why it stays. The reference sets the bar for craft, not the look: take nothing from its surface. If the site cannot be reached, say so in the report.
-6. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance).
+6. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance), and for a tool the one at the end of `references/app-screens.md`.
 7. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero, three identical cards and the whole-look clusters.
 8. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
 9. Report the brief, what the critique changed, the largest gap against the reference, the measured figures against their budgets, and anything you could not verify (for example rendered contrast without a browser).
@@ -142,6 +143,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/slop-tells.md`: the catalogue of generic tells, why they appear and what to do instead.
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
+- `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 - `scripts/check_budgets.py`: reads a Lighthouse report and compares it with the page budgets, used in step 5.
 
