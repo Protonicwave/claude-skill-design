@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from playwright.sync_api import BrowserType, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import sync_playwright
 
 import capture
 from capture import Budgets, main, run_lighthouse
@@ -52,6 +52,7 @@ FAULTY_PAGE = """<!doctype html>
 </head>
 <body>
 <a id="hidden" href="#a">Under the header</a>
+<a id="offscreen" href="#c" style="position: absolute; left: -9999px">Off screen</a>
 <header></header>
 <main>
 <h1>Faulty fixture</h1>
@@ -246,6 +247,10 @@ def test_date_input_and_shadow_root_are_one_stop_each(trap: dict[str, Any]) -> N
     assert elements[:3] == ['a "Before"', "input#when", "bench-pair"]
 
 
+def test_focus_target_outside_the_viewport_is_invisible_focus(faulty: dict[str, Any]) -> None:
+    assert _stop(faulty, "a#offscreen")["focus_visible"] is False
+
+
 def test_head_tags_are_recorded(clean: dict[str, Any], faulty: dict[str, Any]) -> None:
     assert all(clean["head"].values())
     assert faulty["head"] == {
@@ -420,3 +425,44 @@ def test_page_that_never_yields_exits_2_and_leaves_no_report(
     assert main([str(build), str(out), "--load-timeout", "2"]) == 2
     assert str(build) in capsys.readouterr().err
     assert not (out / "function.json").exists()
+
+
+def test_chrome_that_cannot_start_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise PlaywrightError("no Chrome here")
+
+    monkeypatch.setattr(BrowserType, "launch", refuse)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    assert main([str(build), str(tmp_path / "out")]) == 2
+    assert "Chrome could not be started: no Chrome here" in capsys.readouterr().err
+
+
+# Each scroll lengthens the page by a screen, so only the step limit ends the pass.
+ENDLESS_PAGE = CLEAN_PAGE.replace(
+    "</body>",
+    "<script>addEventListener('scroll', () => {"
+    " document.body.style.minHeight = document.body.scrollHeight + innerHeight + 'px'; });"
+    "</script></body>",
+)
+
+
+@pytest.fixture(scope="module")
+def endless(_chrome: None, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+    root = tmp_path_factory.mktemp("endless")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(capture, "MAX_TAB_STOPS", 2)
+        patch.setattr(capture, "MAX_SCROLL_STEPS", 3)
+        return _capture(_build(root / "site", ENDLESS_PAGE), root / "out")
+
+
+def test_walk_stops_at_the_tab_stop_limit(endless: dict[str, Any]) -> None:
+    walk = endless["keyboard_walk"]
+    assert walk["ended_by"] == "limit"
+    assert len(walk["stops"]) == 2
+
+
+def test_page_that_grows_on_scroll_is_captured(endless: dict[str, Any]) -> None:
+    assert endless["timed_out_loads"] == []
+    assert endless["elapsed_seconds"] < capture.CAPTURE_BUDGET_SECONDS
