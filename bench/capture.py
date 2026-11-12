@@ -19,12 +19,16 @@ Exit code 2 means nothing was captured: BUILD has no index.html or Chrome could
 not be started. Otherwise the exit code is 0 and the elapsed capture time is
 printed beside its budget.
 
-Limits: the keyboard walk stops after 200 tab stops, the scroll pass after 60
-viewport heights, Lighthouse after 180 s with every process it started, and the
-budget check after 60 s. A budget check that overruns or crashes is recorded
-as unmeasured, never as a breach. Focus inside iframes is not
-followed, and a focus indicator is judged visible when any pixel around the
-element changes, so a moving video or canvas behind it reads as visible.
+Limits: the keyboard walk stops after 200 presses of Tab, the scroll pass after
+60 viewport heights, Lighthouse after 180 s with every process it started, and
+the budget check after 60 s. A budget check that overruns or crashes is
+recorded as unmeasured, never as a breach.
+
+A date input, a shadow root or an iframe is one tab stop however many presses
+of Tab cross it, since the document's active element stays the same, so focus
+inside it is not judged separately. A focus indicator is judged visible when
+any pixel around the element changes, so a moving video or canvas behind it
+reads as visible.
 """
 
 from __future__ import annotations
@@ -81,13 +85,16 @@ SETTLED_FOCUS_CSS = (
     "*, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }"
 )
 
-# Returns null when focus has left the page's elements (it sits on body), else
-# whether the stop was reached before, a short label, its box, and whether a
-# fixed or sticky element lies over its centre.
+# Returns null when focus has left the page's elements (it sits on body), and
+# {same: true} when focus moved within the element of the last stop. Otherwise
+# returns whether the stop was reached before, a short label, its box, and
+# whether a fixed or sticky element lies over its centre.
 FOCUSED_STOP_JS = """
 () => {
   const el = document.activeElement;
   if (!el || el === document.body || el === document.documentElement) return null;
+  if (el === window.__benchLastStop) return {same: true};
+  window.__benchLastStop = el;
   const seen = (window.__benchStops ??= []);
   const repeat = seen.includes(el);
   if (!repeat) seen.push(el);
@@ -103,7 +110,7 @@ FOCUSED_STOP_JS = """
       if (position === 'fixed' || position === 'sticky') { covered = true; break; }
     }
   }
-  return {repeat, label, covered,
+  return {same: false, repeat, label, covered,
           box: {x: r.left, y: r.top, width: r.width, height: r.height}};
 }
 """
@@ -146,7 +153,8 @@ class TabStop:
 class KeyboardWalk:
     stops: list[TabStop]
     # end: focus left the page's elements; repeat: focus came back to an
-    # earlier stop without leaving them (a trap); limit: MAX_TAB_STOPS reached.
+    # earlier stop without leaving them (a trap); limit: MAX_TAB_STOPS presses
+    # of Tab, which is also how a single element that keeps focus ends.
     ended_by: Literal["end", "repeat", "limit"]
 
 
@@ -369,6 +377,8 @@ def walk_keyboard(page: Page, viewport: Viewport) -> KeyboardWalk:
         stop = page.evaluate(FOCUSED_STOP_JS)
         if stop is None:
             return KeyboardWalk(stops, "end")
+        if stop["same"]:
+            continue
         if stop["repeat"]:
             return KeyboardWalk(stops, "repeat")
         visible = _focus_shows(page, _clip(stop["box"], viewport))

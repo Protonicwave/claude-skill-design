@@ -71,11 +71,20 @@ TRAP_PAGE = """<!doctype html>
 <body>
 <main>
 <a href="#a">Before</a>
+<label for="when">Date</label> <input id="when" type="date">
+<bench-pair></bench-pair>
 <button id="first" type="button">First in trap</button>
 <button id="last" type="button">Last in trap</button>
 <a href="#b">After</a>
 </main>
 <script>
+  customElements.define("bench-pair", class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({mode: "open"}).innerHTML =
+        '<button type="button">One</button><button type="button">Two</button>';
+    }
+  });
   document.getElementById("last").addEventListener("keydown", (event) => {
     if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault();
@@ -224,11 +233,17 @@ def test_walk_ends_when_focus_leaves_the_page(clean: dict[str, Any]) -> None:
 def test_focus_trap_stops_the_walk(trap: dict[str, Any]) -> None:
     walk = trap["keyboard_walk"]
     assert walk["ended_by"] == "repeat"
-    assert [stop["element"] for stop in walk["stops"]] == [
-        'a "Before"',
+    assert [stop["element"] for stop in walk["stops"]][-2:] == [
         'button#first "First in trap"',
         'button#last "Last in trap"',
     ]
+
+
+def test_date_input_and_shadow_root_are_one_stop_each(trap: dict[str, Any]) -> None:
+    # Tab moves between a date input's fields, and between a shadow root's
+    # buttons, while the document's active element stays the same.
+    elements = [stop["element"] for stop in trap["keyboard_walk"]["stops"]]
+    assert elements[:3] == ['a "Before"', "input#when", "bench-pair"]
 
 
 def test_head_tags_are_recorded(clean: dict[str, Any], faulty: dict[str, Any]) -> None:
