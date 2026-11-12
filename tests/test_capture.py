@@ -25,10 +25,14 @@ CLEAN_PAGE = """<!doctype html>
 <meta name="description" content="A page with nothing wrong.">
 <meta property="og:image" content="/card.png">
 <link rel="icon" href="data:,">
+<style>
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                     clip-path: inset(50%); white-space: nowrap; }
+</style>
 </head>
 <body>
 <main>
-<h1>Clean fixture</h1>
+<h1>Clean fixture <span class="visually-hidden">with text only a screen reader reads</span></h1>
 <p><a href="#more">Read more</a></p>
 <label for="email">Email</label> <input id="email" type="email">
 <button type="button">Send</button>
@@ -60,6 +64,10 @@ FAULTY_PAGE = """<!doctype html>
 <button type="button"></button>
 <p><a id="bare" href="#b">No focus style</a></p>
 <div class="wide"></div>
+<p id="clipped" style="width: 200px; overflow: hidden; white-space: nowrap">
+  This sentence runs far past the edge of its narrow box</p>
+<div id="scroller" style="width: 200px; overflow-x: auto; white-space: nowrap">
+  This sentence runs past its box too, which scrolls to show it</div>
 <img src="missing.png" alt="">
 </main>
 <script>console.error("fixture error");</script>
@@ -69,9 +77,16 @@ FAULTY_PAGE = """<!doctype html>
 
 TRAP_PAGE = """<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Trap fixture</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trap fixture</title>
+<style>html, body { overflow-x: hidden; }</style>
+</head>
 <body>
 <main>
+<p id="past" style="white-space: nowrap">
+  This sentence is long enough to run well past the right edge of a phone screen</p>
 <a href="#a">Before</a>
 <label for="when">Date</label> <input id="when" type="date">
 <bench-pair></bench-pair>
@@ -226,6 +241,25 @@ def test_page_wider_than_phone_overflows(faulty: dict[str, Any]) -> None:
 
 def test_clean_page_does_not_overflow(clean: dict[str, Any]) -> None:
     assert clean["phone_overflow_px"] == 0
+
+
+def test_text_clipped_by_its_own_box_is_reported(faulty: dict[str, Any]) -> None:
+    assert any(label.startswith("p#clipped") for label in faulty["phone_clipped_text"])
+
+
+def test_text_in_a_box_that_scrolls_is_not_clipped(faulty: dict[str, Any]) -> None:
+    assert not any(label.startswith("div#scroller") for label in faulty["phone_clipped_text"])
+
+
+def test_text_past_the_phone_width_under_hidden_overflow_is_reported(
+    trap: dict[str, Any],
+) -> None:
+    assert trap["phone_overflow_px"] == 0
+    assert any(label.startswith("p#past") for label in trap["phone_clipped_text"])
+
+
+def test_visually_hidden_text_is_not_clipped(clean: dict[str, Any]) -> None:
+    assert clean["phone_clipped_text"] == []
 
 
 def test_walk_ends_when_focus_leaves_the_page(clean: dict[str, Any]) -> None:

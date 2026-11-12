@@ -12,7 +12,10 @@ the full page after a scroll pass, and the first screen with reduced motion.
 OUT also receives function.json: axe violations, a keyboard walk recording for
 each tab stop whether focus is visible and whether a fixed or sticky element
 covers it, horizontal overflow at the phone width, console errors, failed
-requests, head tags, and loads that hit the timeout. With --lighthouse a mobile
+requests, head tags, and loads that hit the timeout. It also lists, by element,
+text the reader cannot reach at the phone width: text running past a box whose
+overflow is hidden or clipped, or past the screen's edge when the layout does
+not widen to show it. With --lighthouse a mobile
 Lighthouse report is written and judged by the skill's check_budgets.py.
 
 Exit code 2 means no function.json was written: BUILD has no index.html,
@@ -23,7 +26,8 @@ holds one that describes another build. Otherwise the exit code is 0 and the
 elapsed capture time is printed beside its budget.
 
 Limits: the keyboard walk stops after 200 presses of Tab, the scroll pass after
-60 viewport heights, Lighthouse after 180 s with every process it started, and
+60 viewport heights, the clipped-text check after 5,000 text nodes and 20
+elements reported, Lighthouse after 180 s with every process it started, and
 the budget check after 60 s. A budget check that overruns or crashes is
 recorded as unmeasured, never as a breach.
 
@@ -32,7 +36,13 @@ of Tab cross it, since the document's active element stays the same, so focus
 inside it is not judged separately. A focus indicator is judged visible when
 any pixel around the element changes, so a moving video or canvas behind it
 reads as visible. Overflow counts only content that widens the layout: content
-clipped by overflow: hidden on html or body reads as 0 px.
+clipped by overflow: hidden on both html and body reads as 0 px, and is
+reported as clipped text instead; on either alone the layout still widens.
+
+Text in a box that scrolls is reachable, so it is never clipped; text in a box
+1 px or smaller is visually hidden for screen readers, so it is not either.
+Clipping is judged across the width only, and text moved off screen, such as
+in a closed drawer, reads as clipped unless its visibility is hidden.
 """
 
 from __future__ import annotations
@@ -71,6 +81,8 @@ DEFAULT_LOAD_TIMEOUT_SECONDS = 30.0
 ACTION_TIMEOUT_SECONDS = 30.0
 MAX_TAB_STOPS = 200
 MAX_SCROLL_STEPS = 60
+MAX_TEXT_NODES = 5000
+MAX_CLIPPED_REPORTED = 20
 SCROLL_STEP_PAUSE_MS = 120
 SCROLL_SETTLE_MS = 600
 FOCUS_RING_MARGIN_PX = 8
@@ -95,34 +107,78 @@ SETTLED_FOCUS_CSS = (
     "*, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }"
 )
 
+# Defines label(el): the element's tag, id and first 40 characters of its text.
+ELEMENT_LABEL_JS = """
+const label = (el) => {
+  const text = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
+  return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (text ? ' "' + text + '"' : '');
+};
+"""
+
 # Returns null when focus has left the page's elements (it sits on body), and
 # {same: true} when focus moved within the element of the last stop. Otherwise
 # returns whether the stop was reached before, a short label, its box, and
 # whether a fixed or sticky element lies over its centre.
-FOCUSED_STOP_JS = """
-() => {
+FOCUSED_STOP_JS = f"""
+() => {{
+  {ELEMENT_LABEL_JS}
   const el = document.activeElement;
   if (!el || el === document.body || el === document.documentElement) return null;
-  if (el === window.__benchLastStop) return {same: true};
+  if (el === window.__benchLastStop) return {{same: true}};
   window.__benchLastStop = el;
   const seen = (window.__benchStops ??= []);
   const repeat = seen.includes(el);
   if (!repeat) seen.push(el);
   const r = el.getBoundingClientRect();
-  const text = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
-  const label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '')
-    + (text ? ' "' + text + '"' : '');
   const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
   let covered = false;
-  if (top && !el.contains(top) && !top.contains(el)) {
-    for (let n = top; n; n = n.parentElement) {
+  if (top && !el.contains(top) && !top.contains(el)) {{
+    for (let n = top; n; n = n.parentElement) {{
       const position = getComputedStyle(n).position;
-      if (position === 'fixed' || position === 'sticky') { covered = true; break; }
-    }
-  }
-  return {same: false, repeat, label, covered,
-          box: {x: r.left, y: r.top, width: r.width, height: r.height}};
-}
+      if (position === 'fixed' || position === 'sticky') {{ covered = true; break; }}
+    }}
+  }}
+  return {{same: false, repeat, label: label(el), covered,
+          box: {{x: r.left, y: r.top, width: r.width, height: r.height}}}};
+}}
+"""
+
+# Takes [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED] and returns the labels of the
+# elements holding text that runs past a clipping ancestor or the screen's
+# edge. The walk up stops at body: overflow set there clips at the screen's
+# edge, which the last check covers.
+CLIPPED_TEXT_JS = f"""
+([maxNodes, maxReported]) => {{
+  {ELEMENT_LABEL_JS}
+  const root = document.documentElement;
+  const layoutIsWider = root.scrollWidth > root.clientWidth;
+  const beyond = (r, left, right) => r.right > right + 1 || r.left < left - 1;
+  const isClipped = (el, r) => {{
+    for (let box = el; box && box !== document.body; box = box.parentElement) {{
+      const overflow = getComputedStyle(box).overflowX;
+      if (overflow === 'auto' || overflow === 'scroll') return false;
+      if (overflow !== 'hidden' && overflow !== 'clip') continue;
+      const b = box.getBoundingClientRect();
+      if (b.width <= 1 || b.height <= 1) return false;
+      if (beyond(r, b.left, b.right)) return true;
+    }}
+    return !layoutIsWider && beyond(r, 0, root.clientWidth);
+  }};
+  const clipped = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = 0; n < maxNodes && clipped.size < maxReported; n++) {{
+    const node = walker.nextNode();
+    if (!node) break;
+    const el = node.parentElement;
+    if (!el || clipped.has(el) || !node.textContent.trim()) continue;
+    if (getComputedStyle(el).visibility !== 'visible') continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+    if (rects.some((r) => isClipped(el, r))) clipped.add(el);
+  }}
+  return [...clipped].map(label);
+}}
 """
 
 HEAD_TAGS_JS = """
@@ -137,8 +193,8 @@ HEAD_TAGS_JS = """
 
 # The layout width, not innerWidth: mobile Chrome zooms out to fit content
 # wider than the screen, which widens innerWidth to match it. Content clipped
-# by overflow: hidden on html or body does not widen the layout, so it reads
-# as 0 px although the reader cannot reach it.
+# by overflow: hidden on both html and body does not widen the layout, so it
+# reads as 0 px although the reader cannot reach it.
 OVERFLOW_JS = "() => document.documentElement.scrollWidth - document.documentElement.clientWidth"
 
 
@@ -207,6 +263,7 @@ class FunctionReport:
     axe_violations: list[Violation]
     keyboard_walk: KeyboardWalk
     phone_overflow_px: int
+    phone_clipped_text: list[str]
     head: HeadTags
     console_errors: list[str]
     failed_requests: list[str]
@@ -493,6 +550,10 @@ def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> F
     desktop, taken_at = shoot_viewport(run, DESKTOP)
     phone, phone_taken_at = shoot_viewport(run, PHONE)
     overflow_px = int(phone.evaluate(OVERFLOW_JS))
+    clipped_text = [
+        str(label)
+        for label in phone.evaluate(CLIPPED_TEXT_JS, [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED])
+    ]
     phone.context.close()
     head = read_head(desktop)
     violations = run_axe(desktop)
@@ -505,6 +566,7 @@ def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> F
         axe_violations=violations,
         keyboard_walk=walk,
         phone_overflow_px=max(overflow_px, 0),
+        phone_clipped_text=clipped_text,
         head=head,
         console_errors=sorted(run.events.console_errors),
         failed_requests=sorted(run.events.failed_requests),

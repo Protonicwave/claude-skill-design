@@ -67,7 +67,7 @@ The bench compares pages built with and without the skill. Capture one build, a 
 uv run python bench/capture.py path/to/build path/to/out
 ```
 
-`out` receives desktop (1440 by 900) and phone (375 by 812) screenshots: the first screen, frames at 0.25, 0.75, 1.5 and 3 s after navigation, three scroll depths, the full page and the first screen with reduced motion. It also receives `function.json`, recording axe violations, a keyboard walk, phone overflow, console errors, failed requests and head tags. `--lighthouse` adds a mobile Lighthouse run judged by `check_budgets.py`. The script prints its elapsed time beside the 90 s budget for one capture without Lighthouse.
+`out` receives desktop (1440 by 900) and phone (375 by 812) screenshots: the first screen, frames at 0.25, 0.75, 1.5 and 3 s after navigation, three scroll depths, the full page and the first screen with reduced motion. It also receives `function.json`, recording axe violations, a keyboard walk, phone overflow, text clipped at the phone width, console errors, failed requests and head tags. `--lighthouse` adds a mobile Lighthouse run judged by `check_budgets.py`. The script prints its elapsed time beside the 90 s budget for one capture without Lighthouse.
 
 ### Running a round
 
