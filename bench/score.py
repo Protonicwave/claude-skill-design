@@ -198,7 +198,7 @@ def read_round(round_dir: Path) -> Round:
         if (pair.id, 1) in verdicts and (pair.id, 2) in verdicts
     }
     functions = {
-        token: read_function(Path(build.capture) / "function.json")
+        token: read_function(round_dir / build.capture / "function.json")
         for token, build in key.builds.items()
     }
     return Round(key, verdicts, judged, read_votes(round_dir / "votes.json", key), functions)

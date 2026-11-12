@@ -19,7 +19,9 @@ or voter sees names an arm.
 ROUND receives briefs/<pair>-<order>.md (in order 1 the pair's first build is
 page A, in order 2 it is page B), an empty verdicts/ for the judges, vote.html
 with N pairs (default 10) chosen to cover every subject and arm pair where N
-allows, and key.json, the only file that says which build is which.
+allows, and key.json, the only file that says which build is which. Capture
+paths are kept as the manifest gives them, so a round whose captures sit
+inside it can be moved.
 
 Exit code 2 means nothing was written: the manifest or a prompt is missing or
 malformed, a capture lacks an image, no two arms share a subject and run, or
@@ -77,6 +79,7 @@ class Build:
     subject: str
     arm: str
     run: int
+    # As the manifest gives it: relative to the round folder, or absolute.
     capture: str
 
 
@@ -153,7 +156,7 @@ def _parse_build(item: Any, subjects: dict[str, str], path: Path) -> Build:
     _require(isinstance(arm, str) and arm != "", path, f"expected a non-empty arm, got {arm!r}")
     _require(type(run) is int and run > 0, path, f"expected a positive integer run, got {run!r}")
     _require(isinstance(capture, str), path, f"expected a capture path, got {capture!r}")
-    return Build(subject, arm, run, str((path.parent / capture).resolve()))
+    return Build(subject, arm, run, capture)
 
 
 def parse_manifest(path: Path) -> Manifest:
@@ -194,10 +197,10 @@ def parse_manifest(path: Path) -> Manifest:
     return Manifest(seed, prompts, builds)
 
 
-def _check_images(builds: list[Build]) -> None:
+def _check_images(round_dir: Path, builds: list[Build]) -> None:
     for build in builds:
         for name in JUDGED_IMAGES:
-            image = Path(build.capture) / name
+            image = round_dir / build.capture / name
             if not image.is_file():
                 raise RoundError(f"capture image {image} not found")
 
@@ -431,7 +434,7 @@ def write_round(round_dir: Path, manifest: Manifest, key: Key) -> None:
         folder = round_dir / "blind" / token
         folder.mkdir(parents=True, exist_ok=True)
         for name in JUDGED_IMAGES:
-            shutil.copyfile(Path(build.capture) / name, folder / name)
+            shutil.copyfile(round_dir / build.capture / name, folder / name)
     (round_dir / "briefs").mkdir(exist_ok=True)
     (round_dir / "verdicts").mkdir(exist_ok=True)
     for pair in key.pairs:
@@ -469,7 +472,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if verdicts.is_dir() and any(verdicts.iterdir()):
             raise RoundError(f"{verdicts} holds verdicts with no key.json; move them away first")
         manifest = parse_manifest(args.round / "manifest.json")
-        _check_images(manifest.builds)
+        _check_images(args.round, manifest.builds)
         # Seeded so a round can be paired again identically; the tokens hide
         # arms from judges reading files, not from anyone holding the seed.
         key = draw_key(manifest, args.votes, random.Random(manifest.seed))  # noqa: S311

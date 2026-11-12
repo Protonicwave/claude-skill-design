@@ -44,20 +44,20 @@ def round_dir(tmp_path: Path) -> Path:
         "t3": ("restaurant", "bare"),
         "t4": ("restaurant", "craft"),
     }
+    folder = tmp_path / "round"
     builds = {}
     for token, (subject, arm) in cells.items():
-        capture = tmp_path / "captures" / token
+        capture = folder / "captures" / token
         capture.mkdir(parents=True)
         (capture / "function.json").write_text(json.dumps(function_report()))
-        builds[token] = Build(subject, arm, 1, str(capture))
+        builds[token] = Build(subject, arm, 1, f"captures/{token}")
     key = Key(
         builds=builds,
         pairs=[Pair("p01", "profiler", "t1", "t2"), Pair("p02", "restaurant", "t4", "t3")],
         votes={"p01": 1, "p02": 2},
         dropped=["restaurant run 2: bare has no craft partner"],
     )
-    folder = tmp_path / "round"
-    (folder / "verdicts").mkdir(parents=True)
+    (folder / "verdicts").mkdir()
     (folder / "key.json").write_text(json.dumps(asdict(key)))
     return folder
 
@@ -183,8 +183,7 @@ def test_malformed_votes_exit_2_naming_the_file(
 
 def write_function(round_dir: Path, token: str, report: dict[str, Any]) -> None:
     key = json.loads((round_dir / "key.json").read_text())
-    capture = Path(key["builds"][token]["capture"])
-    (capture / "function.json").write_text(json.dumps(report))
+    (round_dir / key["builds"][token]["capture"] / "function.json").write_text(json.dumps(report))
 
 
 def test_function_problems_are_counted_per_build_and_per_arm(round_dir: Path) -> None:
@@ -236,8 +235,7 @@ def test_budget_exit_codes_are_named(round_dir: Path, exit_code: int, shown: str
 def test_a_missing_function_report_exits_2_naming_it(
     round_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    key = json.loads((round_dir / "key.json").read_text())
-    path = Path(key["builds"]["t3"]["capture"]) / "function.json"
+    path = round_dir / "captures" / "t3" / "function.json"
     path.unlink()
     assert main([str(round_dir)]) == 2
     assert str(path) in capsys.readouterr().err
@@ -258,3 +256,8 @@ def test_dropped_pairs_are_listed(round_dir: Path) -> None:
 def test_an_unpaired_round_exits_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert main([str(tmp_path)]) == 2
     assert "no key.json" in capsys.readouterr().err
+
+
+def test_a_moved_round_still_finds_its_captures(round_dir: Path) -> None:
+    moved = round_dir.rename(round_dir.with_name("moved"))
+    assert "| profiler | bare | 1 |" in results(moved)

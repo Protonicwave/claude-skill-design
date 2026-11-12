@@ -319,3 +319,15 @@ def test_verdicts_without_a_key_exit_2_and_are_kept(
     assert "verdicts" in capsys.readouterr().err
     assert verdict.exists()
     assert not (round_dir / "key.json").exists()
+
+
+def test_capture_paths_are_kept_relative_to_the_round(tmp_path: Path) -> None:
+    round_dir = write_round(tmp_path, write_captures(tmp_path, runs=1))
+    manifest = json.loads((round_dir / "manifest.json").read_text())
+    for build in manifest["builds"]:
+        build["capture"] = Path(build["capture"]).relative_to(tmp_path).as_posix()
+        build["capture"] = f"../{build['capture']}"
+    (round_dir / "manifest.json").write_text(json.dumps(manifest))
+    assert main([str(round_dir)]) == 0
+    captures = {build.capture for build in load_key(round_dir / "key.json").builds.values()}
+    assert all(capture.startswith("../captures/") for capture in captures)
