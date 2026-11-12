@@ -85,7 +85,7 @@ results.md      written by score.py
 
 1. Copy each arm's instructions into `arms/`: a skill's whole folder, so its references resolve inside the copy. An arm with no instructions has no folder.
 2. Build each page with one subagent per build, on the same model for every arm, using the brief below. A build whose reply names a skill or file of another arm is discarded and rebuilt once.
-3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`.
+3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`. An arm whose instructions have not changed since an earlier round need not be rebuilt: capture its builds from that round's `builds/` into this round's `captures/`, so every build in the round is measured by the same capture.
 4. Write `manifest.json`, with paths relative to the round folder:
 
    ```json
