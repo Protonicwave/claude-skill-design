@@ -408,14 +408,8 @@ def run_axe(page: Page) -> list[Violation]:
 
 
 def read_head(page: Page) -> HeadTags:
-    tags = page.evaluate(HEAD_TAGS_JS)
-    return HeadTags(
-        title=bool(tags["title"]),
-        lang=bool(tags["lang"]),
-        viewport=bool(tags["viewport"]),
-        description=bool(tags["description"]),
-        og_image=bool(tags["og_image"]),
-    )
+    # HEAD_TAGS_JS returns exactly HeadTags' fields, each already a boolean.
+    return HeadTags(**page.evaluate(HEAD_TAGS_JS))
 
 
 def run_lighthouse(url: str, out: Path) -> Budgets:

@@ -44,12 +44,12 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from string import Template
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from views import MOTION_FRAME_SECONDS, SCROLL_DEPTHS_PERCENT, motion_image, scroll_image
 
 Choice = Literal["A", "B", "tie"]
-CHOICES: tuple[Choice, ...] = ("A", "B", "tie")
+CHOICES: tuple[Choice, ...] = get_args(Choice)
 CRITERIA = ("first_screen", "whole_page", "imagery", "type", "motion", "fit", "overall")
 JUDGED_IMAGES = (
     "desktop-first.png",
@@ -87,6 +87,10 @@ class Pair:
     subject: str
     first: str
     second: str
+
+    def pages(self, order: int) -> tuple[str, str]:
+        """The tokens shown as page A and page B: order 1 shows first as A, order 2 swaps them."""
+        return (self.first, self.second) if order == 1 else (self.second, self.first)
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,7 +267,10 @@ def match_builds(builds: list[Build]) -> tuple[list[tuple[Build, Build]], list[s
 
 
 def choose_votes(pairs: list[Pair], key_builds: dict[str, Build], count: int) -> list[Pair]:
-    """Pick count pairs, each time preferring one that adds an unseen subject, arm pair or both."""
+    """Pick count pairs, each time the one adding most of three things not yet chosen.
+
+    The three are a subject, an arm pair, and that subject with that arm pair.
+    """
 
     def arm_pair(pair: Pair) -> frozenset[str]:
         return frozenset({key_builds[pair.first].arm, key_builds[pair.second].arm})
@@ -335,7 +342,7 @@ def _image_list(folder: Path) -> str:
 
 
 def write_brief(round_dir: Path, pair: Pair, order: int, prompt: str) -> None:
-    page_a, page_b = (pair.first, pair.second) if order == 1 else (pair.second, pair.first)
+    page_a, page_b = pair.pages(order)
     blind = round_dir.resolve() / "blind"
     text = BRIEF.substitute(
         verdict=(round_dir.resolve() / "verdicts" / f"{pair.id}-{order}.json").as_posix(),
@@ -448,7 +455,7 @@ def _vote_page_column(token: str, page: str) -> str:
 
 
 def _vote_section(pair: Pair, order: int, prompt: str) -> str:
-    page_a, page_b = (pair.first, pair.second) if order == 1 else (pair.second, pair.first)
+    page_a, page_b = pair.pages(order)
     radios = "".join(
         f'<label><input type="radio" name="{pair.id}" value="{choice}"> {choice}</label>'
         for choice in CHOICES

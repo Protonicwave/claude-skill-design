@@ -38,7 +38,9 @@ BUDGET_RESULTS = {0: "pass", 1: "breach", 2: "unmeasured"}
 
 Verdict = dict[str, Choice]
 # Per criterion, the token of the build that won, or None for a tie.
-Winners = Mapping[str, str | None]
+Winners = dict[str, str | None]
+# Per voted pair, the token of the build the user chose, or None for a tie.
+Votes = dict[str, str | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,13 +134,13 @@ def chosen_build(pair: Pair, order: int, choice: Choice) -> str | None:
     """The token of the build a choice names when the pair was shown in order 1 or 2."""
     if choice == "tie":
         return None
-    page_a, page_b = (pair.first, pair.second) if order == 1 else (pair.second, pair.first)
+    page_a, page_b = pair.pages(order)
     return page_a if choice == "A" else page_b
 
 
-def resolve(pair: Pair, order_1: Verdict, order_2: Verdict) -> dict[str, str | None]:
+def resolve(pair: Pair, order_1: Verdict, order_2: Verdict) -> Winners:
     """Per criterion, the build both orders chose, or None when they did not agree."""
-    winners: dict[str, str | None] = {}
+    winners: Winners = {}
     for criterion in CRITERIA:
         first = chosen_build(pair, 1, order_1[criterion])
         second = chosen_build(pair, 2, order_2[criterion])
@@ -146,7 +148,7 @@ def resolve(pair: Pair, order_1: Verdict, order_2: Verdict) -> dict[str, str | N
     return winners
 
 
-def read_votes(path: Path, key: Key) -> dict[str, str | None] | None:
+def read_votes(path: Path, key: Key) -> Votes | None:
     """Per voted pair, the build the user chose (None for a tie), or None without votes.json."""
     if not path.exists():
         return None
@@ -154,7 +156,7 @@ def read_votes(path: Path, key: Key) -> dict[str, str | None] | None:
     if not isinstance(raw, dict):
         raise RoundError(f"{path}: expected an object of pair id to choice")
     pairs = {pair.id: pair for pair in key.pairs}
-    votes: dict[str, str | None] = {}
+    votes: Votes = {}
     for pair_id, choice in raw.items():
         if pair_id not in key.votes:
             raise RoundError(f"{path}: pair {pair_id!r} was not on the vote page")
@@ -181,8 +183,8 @@ def _table(header: Sequence[str], rows: Sequence[Sequence[object]]) -> list[str]
 class Round:
     key: Key
     verdicts: dict[tuple[str, int], Verdict]
-    judged: dict[str, dict[str, str | None]]
-    votes: dict[str, str | None] | None
+    judged: dict[str, Winners]
+    votes: Votes | None
     functions: dict[str, FunctionSummary]
 
     def arm(self, token: str) -> str:
