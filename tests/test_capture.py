@@ -5,6 +5,7 @@ import socket
 import sys
 import time
 from collections.abc import Iterator
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
@@ -321,6 +322,10 @@ def test_motion_frames_are_taken_no_earlier_than_scheduled(clean: dict[str, Any]
         assert seconds >= scheduled
 
 
+# Longer than the 1 s load timeout, so the response commits after it has passed.
+SLOW_RESPONSE_SECONDS = 1.5
+
+
 @pytest.fixture(scope="module")
 def slow_out(_chrome: None, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
     """Capture a page whose image comes from a port that accepts and never answers."""
@@ -340,6 +345,21 @@ def test_load_that_never_finishes_is_recorded(slow_out: Path) -> None:
     report = _report(slow_out)
     assert report["timed_out_loads"] == ["desktop", "phone", "desktop-reduced", "phone-reduced"]
     assert (slow_out / "desktop-first.png").is_file()
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_response_slower_than_the_load_timeout_is_still_captured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def answer_late(handler: SimpleHTTPRequestHandler) -> None:
+        time.sleep(SLOW_RESPONSE_SECONDS)
+        SimpleHTTPRequestHandler.do_GET(handler)
+
+    monkeypatch.setattr(capture._QuietHandler, "do_GET", answer_late)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    report = _capture(build, tmp_path / "out", "--load-timeout", "1")
+    assert (tmp_path / "out" / "phone-reduced.png").is_file()
+    assert report["phone_overflow_px"] == 0
 
 
 @pytest.mark.skipif(shutil.which("npx") is None, reason="npx is needed to run Lighthouse")

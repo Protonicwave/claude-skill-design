@@ -299,7 +299,7 @@ class CaptureRun:
     browser: Browser
     url: str
     out: Path
-    timeout_ms: float
+    load_timeout_ms: float
     events: PageEvents
 
 
@@ -341,13 +341,16 @@ def _open(run: CaptureRun, viewport: Viewport, *, reduced: bool) -> tuple[Page, 
     context.set_default_timeout(ACTION_TIMEOUT_SECONDS * 1000)
     page = context.new_page()
     _watch(page, run)
-    page.goto(run.url, wait_until="commit", timeout=run.timeout_ms)
+    # Bounded by the action timeout, not the load timeout: a commit slower than
+    # a short load timeout would otherwise fail the capture instead of being
+    # recorded as a load that timed out.
+    page.goto(run.url, wait_until="commit")
     return page, time.monotonic()
 
 
 def _finish_loading(run: CaptureRun, page: Page, load_name: str) -> None:
     try:
-        page.wait_for_load_state("load", timeout=run.timeout_ms)
+        page.wait_for_load_state("load", timeout=run.load_timeout_ms)
     except PlaywrightTimeoutError:
         run.events.timed_out_loads.append(load_name)
 
@@ -544,9 +547,9 @@ def _stop_tree(process: subprocess.Popen[bytes]) -> None:
     process.wait()
 
 
-def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> FunctionReport:
+def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float) -> FunctionReport:
     started = time.monotonic()
-    run = CaptureRun(browser, url, out, timeout_ms, PageEvents())
+    run = CaptureRun(browser, url, out, load_timeout_ms, PageEvents())
     desktop, taken_at = shoot_viewport(run, DESKTOP)
     phone, phone_taken_at = shoot_viewport(run, PHONE)
     overflow_px = int(phone.evaluate(OVERFLOW_JS))
