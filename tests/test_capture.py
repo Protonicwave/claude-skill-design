@@ -86,6 +86,7 @@ TRAP_PAGE = """<!doctype html>
 </head>
 <body>
 <main>
+<span id="parked" style="position: absolute; left: -9999px">Read by screen readers only</span>
 <p id="past" style="white-space: nowrap">
   This sentence is long enough to run well past the right edge of a phone screen</p>
 <a href="#a">Before</a>
@@ -257,6 +258,10 @@ def test_text_past_the_phone_width_under_hidden_overflow_is_reported(
 ) -> None:
     assert trap["phone_overflow_px"] == 0
     assert any(label.startswith("p#past") for label in trap["phone_clipped_text"])
+
+
+def test_text_parked_wholly_off_screen_is_not_clipped(trap: dict[str, Any]) -> None:
+    assert not any(label.startswith("span#parked") for label in trap["phone_clipped_text"])
 
 
 def test_visually_hidden_text_is_not_clipped(clean: dict[str, Any]) -> None:

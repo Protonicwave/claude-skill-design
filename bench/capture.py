@@ -13,8 +13,8 @@ OUT also receives function.json: axe violations, a keyboard walk recording for
 each tab stop whether focus is visible and whether a fixed or sticky element
 covers it, horizontal overflow at the phone width, console errors, failed
 requests, head tags, and loads that hit the timeout. It also lists, by element,
-text the reader cannot reach at the phone width: text running past a box whose
-overflow is hidden or clipped, or past the screen's edge when the layout does
+text the reader cannot reach at the phone width: text cut by the edge of a box
+whose overflow is hidden or clipped, or by the screen's edge when the layout does
 not widen to show it. With --lighthouse a mobile
 Lighthouse report is written and judged by the skill's check_budgets.py.
 
@@ -41,8 +41,9 @@ reported as clipped text instead; on either alone the layout still widens.
 
 Text in a box that scrolls is reachable, so it is never clipped; text in a box
 1 px or smaller is visually hidden for screen readers, so it is not either.
-Clipping is judged across the width only, and text moved off screen, such as
-in a closed drawer, reads as clipped unless its visibility is hidden.
+Text wholly past an edge, such as a skip link or a closed drawer parked off
+screen, is placed there on purpose and is not clipped either. Clipping is
+judged across the width only.
 """
 
 from __future__ import annotations
@@ -144,7 +145,7 @@ FOCUSED_STOP_JS = f"""
 """
 
 # Takes [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED] and returns the labels of the
-# elements holding text that runs past a clipping ancestor or the screen's
+# elements holding text cut by the edge of a clipping ancestor or the screen's
 # edge. The walk up stops at body: overflow set there clips at the screen's
 # edge, which the last check covers.
 CLIPPED_TEXT_JS = f"""
@@ -152,7 +153,8 @@ CLIPPED_TEXT_JS = f"""
   {ELEMENT_LABEL_JS}
   const root = document.documentElement;
   const layoutIsWider = root.scrollWidth > root.clientWidth;
-  const beyond = (r, left, right) => r.right > right + 1 || r.left < left - 1;
+  const cut = (r, left, right) =>
+    (r.left < right && r.right > right + 1) || (r.right > left && r.left < left - 1);
   const isClipped = (el, r) => {{
     for (let box = el; box && box !== document.body; box = box.parentElement) {{
       const overflow = getComputedStyle(box).overflowX;
@@ -160,9 +162,9 @@ CLIPPED_TEXT_JS = f"""
       if (overflow !== 'hidden' && overflow !== 'clip') continue;
       const b = box.getBoundingClientRect();
       if (b.width <= 1 || b.height <= 1) return false;
-      if (beyond(r, b.left, b.right)) return true;
+      if (cut(r, b.left, b.right)) return true;
     }}
-    return !layoutIsWider && beyond(r, 0, root.clientWidth);
+    return !layoutIsWider && cut(r, 0, root.clientWidth);
   }};
   const clipped = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
