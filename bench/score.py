@@ -185,8 +185,17 @@ class Round:
     votes: dict[str, str | None] | None
     functions: dict[str, FunctionSummary]
 
-    def arm(self, token: str | None) -> str:
-        return "tie" if token is None else self.key.builds[token].arm
+    def arm(self, token: str) -> str:
+        return self.key.builds[token].arm
+
+    def outcome(self, winner: str | None) -> str:
+        """The winning build's arm, or "tie" for display when there was no winner."""
+        return "tie" if winner is None else self.arm(winner)
+
+    def tally(self, winners: Sequence[str | None], left: str, right: str) -> list[int]:
+        """How many winners are of the left arm, ties, and of the right arm."""
+        arms = [None if winner is None else self.arm(winner) for winner in winners]
+        return [arms.count(left), arms.count(None), arms.count(right)]
 
     def arm_pair(self, pair: Pair) -> tuple[str, str]:
         left, right = sorted((self.arm(pair.first), self.arm(pair.second)))
@@ -243,11 +252,7 @@ def _judge_section(scored: Round) -> list[str]:
             if scored.arm_pair(pair) == (left, right) and pair.id in scored.judged
         ]
         rows = [
-            [criterion]
-            + [
-                sum(scored.arm(w[criterion]) == side for w in judged)
-                for side in (left, "tie", right)
-            ]
+            [criterion, *scored.tally([w[criterion] for w in judged], left, right)]
             for criterion in CRITERIA
         ]
         lines += ["", f"### {left} against {right}", ""]
@@ -264,11 +269,11 @@ def _vote_section(scored: Round) -> list[str]:
     rows = []
     for left, right in sorted({scored.arm_pair(pairs[pair_id]) for pair_id in votes}):
         chosen = [
-            scored.arm(build)
+            build
             for pair_id, build in votes.items()
             if scored.arm_pair(pairs[pair_id]) == (left, right)
         ]
-        rows.append([f"{left} against {right}", *(chosen.count(s) for s in (left, "tie", right))])
+        rows.append([f"{left} against {right}", *scored.tally(chosen, left, right)])
     return [
         "## Votes",
         "",
@@ -281,16 +286,16 @@ def _vote_section(scored: Round) -> list[str]:
 
 def _pairs_section(scored: Round) -> list[str]:
     rows = []
+    votes = scored.votes or {}
     for pair in scored.key.pairs:
         judged = scored.judged.get(pair.id)
-        votes = scored.votes or {}
         rows.append(
             [
                 pair.id,
                 pair.subject,
                 f"{scored.arm(pair.first)} against {scored.arm(pair.second)}",
-                "unjudged" if judged is None else scored.arm(judged["overall"]),
-                scored.arm(votes[pair.id]) if pair.id in votes else "not voted",
+                "unjudged" if judged is None else scored.outcome(judged["overall"]),
+                scored.outcome(votes[pair.id]) if pair.id in votes else "not voted",
             ]
         )
     return ["## Pairs", "", *_table(["Pair", "Subject", "Arms", "Judges", "User"], rows)]

@@ -321,3 +321,23 @@ def test_a_malformed_key_exits_2_naming_it(
     edit_key(round_dir, **changes)
     assert main([str(round_dir)]) == 2
     assert str(round_dir / "key.json") in capsys.readouterr().err
+
+
+def test_an_arm_named_tie_is_not_counted_as_a_tie(round_dir: Path) -> None:
+    key = json.loads((round_dir / "key.json").read_text())
+    builds = {
+        token: build | {"arm": "tie"} if build["arm"] == "bare" else build
+        for token, build in key["builds"].items()
+    }
+    edit_key(round_dir, builds=builds)
+    # p01: both orders choose t1 (arm "tie"); p02: both choose t4 (craft).
+    write_verdict(round_dir, "p01-1", verdict(overall="A"))
+    write_verdict(round_dir, "p01-2", verdict(overall="B"))
+    write_verdict(round_dir, "p02-1", verdict(overall="A"))
+    write_verdict(round_dir, "p02-2", verdict(overall="B"))
+    # The vote page showed p02 in order 2, so page A was t3 (arm "tie").
+    (round_dir / "votes.json").write_text(json.dumps({"p01": "B", "p02": "A"}))
+    text = results(round_dir)
+    assert "| overall | 1 | 0 | 1 |" in text
+    assert "| imagery | 0 | 2 | 0 |" in text
+    assert "| craft against tie | 1 | 0 | 1 |" in text
