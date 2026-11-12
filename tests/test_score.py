@@ -261,3 +261,63 @@ def test_an_unpaired_round_exits_2(tmp_path: Path, capsys: pytest.CaptureFixture
 def test_a_moved_round_still_finds_its_captures(round_dir: Path) -> None:
     moved = round_dir.rename(round_dir.with_name("moved"))
     assert "| profiler | bare | 1 |" in results(moved)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"phone_overflow_px": "40"},
+        {"phone_overflow_px": True},
+        {"elapsed_seconds": "slow"},
+        {"budgets": {"exit_code": 7, "lines": []}},
+        {"budgets": "breach"},
+        {"axe_violations": ["label"]},
+        {"keyboard_walk": {"stops": {}, "ended_by": "end"}},
+        {"keyboard_walk": {"stops": [{"covered": False}], "ended_by": "end"}},
+        {"head": {"title": "yes"}},
+        {"console_errors": None},
+    ],
+)
+def test_a_function_report_with_a_wrong_field_exits_2_naming_it(
+    round_dir: Path, capsys: pytest.CaptureFixture[str], overrides: dict[str, Any]
+) -> None:
+    write_function(round_dir, "t4", function_report(**overrides))
+    assert main([str(round_dir)]) == 2
+    assert str(round_dir / "captures" / "t4" / "function.json") in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "name", ["verdicts/p01-1.json", "votes.json", "key.json", "captures/t2/function.json"]
+)
+def test_a_file_that_is_not_utf8_exits_2_naming_it(
+    round_dir: Path, capsys: pytest.CaptureFixture[str], name: str
+) -> None:
+    path = round_dir / name
+    path.write_bytes(b'{"overall": "\xff"}')
+    assert main([str(round_dir)]) == 2
+    assert str(path) in capsys.readouterr().err
+
+
+def edit_key(round_dir: Path, **changes: Any) -> None:
+    path = round_dir / "key.json"
+    path.write_text(json.dumps(json.loads(path.read_text()) | changes))
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"pairs": None},
+        {"pairs": [{"id": "p01", "subject": "profiler", "first": "t1", "second": "t9"}]},
+        {"builds": {"t1": {"subject": "profiler", "arm": "bare", "run": "1", "capture": "c"}}},
+        {"votes": {"p01": 3}},
+        {"votes": {"p07": 1}},
+        {"dropped": [1]},
+        {"extra": True},
+    ],
+)
+def test_a_malformed_key_exits_2_naming_it(
+    round_dir: Path, capsys: pytest.CaptureFixture[str], changes: dict[str, Any]
+) -> None:
+    edit_key(round_dir, **changes)
+    assert main([str(round_dir)]) == 2
+    assert str(round_dir / "key.json") in capsys.readouterr().err

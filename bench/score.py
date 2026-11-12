@@ -23,14 +23,14 @@ message names the file.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from capture import CAPTURE_BUDGET_SECONDS
-from pairs import CHOICES, CRITERIA, Build, Choice, Key, Pair, RoundError, load_key
+from pairs import CHOICES, CRITERIA, Build, Choice, Key, Pair, RoundError, load_key, read_json
 
 SERIOUS_IMPACTS = frozenset({"serious", "critical"})
 RESOURCE_ERROR_PREFIX = "Failed to load resource"
@@ -71,40 +71,55 @@ PROBLEMS: tuple[tuple[str, Callable[[FunctionSummary], bool]], ...] = (
 )
 
 
+# Any: record and the value returned come from JSON; the value is checked against kinds here.
+def _field(path: Path, record: Any, name: str, *kinds: type) -> Any:
+    """record[name] when record is an object and the value's type is one of kinds."""
+    if type(record) is not dict or type(record.get(name)) not in kinds:
+        expected = " or ".join("null" if kind is type(None) else kind.__name__ for kind in kinds)
+        raise RoundError(f"{path}: expected {name!r} as {expected} in a capture.py report")
+    return record[name]
+
+
+def _budget_result(path: Path, budgets: dict[str, Any] | None) -> str:
+    if budgets is None:
+        return "not run"
+    exit_code = _field(path, budgets, "exit_code", int)
+    if exit_code not in BUDGET_RESULTS:
+        raise RoundError(f"{path}: expected a budget exit code of 0, 1 or 2, got {exit_code}")
+    return BUDGET_RESULTS[exit_code]
+
+
 def read_function(path: Path) -> FunctionSummary:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        stops = raw["keyboard_walk"]["stops"]
-        budgets = raw["budgets"]
-        return FunctionSummary(
-            serious_axe=sum(v["impact"] in SERIOUS_IMPACTS for v in raw["axe_violations"]),
-            hidden_focus=sum(not stop["focus_visible"] for stop in stops),
-            covered_focus=sum(bool(stop["covered"]) for stop in stops),
-            walk_end=str(raw["keyboard_walk"]["ended_by"]),
-            overflow_px=int(raw["phone_overflow_px"]),
-            console_errors=sum(
-                not str(line).startswith(RESOURCE_ERROR_PREFIX) for line in raw["console_errors"]
-            ),
-            failed_requests=len(raw["failed_requests"]),
-            missing_head=tuple(tag for tag, present in raw["head"].items() if not present),
-            timed_out_loads=len(raw["timed_out_loads"]),
-            budgets="not run" if budgets is None else BUDGET_RESULTS[budgets["exit_code"]],
-            elapsed_seconds=float(raw["elapsed_seconds"]),
-        )
-    except FileNotFoundError as error:
-        raise RoundError(f"function report {path} not found") from error
-    except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as error:
-        raise RoundError(f"{path}: not a capture.py function report ({error!r})") from error
+    raw = read_json(path)
+    walk = _field(path, raw, "keyboard_walk", dict)
+    stops = _field(path, walk, "stops", list)
+    head = _field(path, raw, "head", dict)
+    console_errors = _field(path, raw, "console_errors", list)
+    return FunctionSummary(
+        serious_axe=sum(
+            _field(path, violation, "impact", str) in SERIOUS_IMPACTS
+            for violation in _field(path, raw, "axe_violations", list)
+        ),
+        hidden_focus=sum(not _field(path, stop, "focus_visible", bool) for stop in stops),
+        covered_focus=sum(_field(path, stop, "covered", bool) for stop in stops),
+        walk_end=_field(path, walk, "ended_by", str),
+        overflow_px=_field(path, raw, "phone_overflow_px", int),
+        console_errors=sum(
+            not str(line).startswith(RESOURCE_ERROR_PREFIX) for line in console_errors
+        ),
+        failed_requests=len(_field(path, raw, "failed_requests", list)),
+        missing_head=tuple(tag for tag in head if not _field(path, head, tag, bool)),
+        timed_out_loads=len(_field(path, raw, "timed_out_loads", list)),
+        budgets=_budget_result(path, _field(path, raw, "budgets", dict, type(None))),
+        elapsed_seconds=float(_field(path, raw, "elapsed_seconds", int, float)),
+    )
 
 
 def read_verdict(path: Path) -> Verdict | None:
     """The verdict at path, or None when the judge has not written one."""
     if not path.exists():
         return None
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        raise RoundError(f"{path}: not valid JSON ({error})") from error
+    raw = read_json(path)
     if not isinstance(raw, dict) or set(raw) - {"reasons"} != set(CRITERIA):
         raise RoundError(f"{path}: expected an object with the keys {', '.join(CRITERIA)}")
     wrong = [criterion for criterion in CRITERIA if raw[criterion] not in CHOICES]
@@ -135,10 +150,7 @@ def read_votes(path: Path, key: Key) -> dict[str, str | None] | None:
     """Per voted pair, the build the user chose (None for a tie), or None without votes.json."""
     if not path.exists():
         return None
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as error:
-        raise RoundError(f"{path}: not valid JSON ({error})") from error
+    raw = read_json(path)
     if not isinstance(raw, dict):
         raise RoundError(f"{path}: expected an object of pair id to choice")
     pairs = {pair.id: pair for pair in key.pairs}

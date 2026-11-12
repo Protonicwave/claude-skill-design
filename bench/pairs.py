@@ -67,6 +67,8 @@ MAX_BUILDS = 200
 MIN_ARMS = 2
 DEFAULT_VOTES = 10
 TOKEN_SPACE = 16**6
+BUILD_FIELDS: dict[str, type] = {"subject": str, "arm": str, "run": int, "capture": str}
+PAIR_FIELDS: dict[str, type] = {"id": str, "subject": str, "first": str, "second": str}
 RUBRIC = Path(__file__).resolve().parent / "rubric.md"
 
 
@@ -126,19 +128,59 @@ def read_json(path: Path) -> Any:
         raise RoundError(f"{path}: not valid JSON ({error})") from error
 
 
-def load_key(path: Path) -> Key:
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    return Key(
-        builds={token: Build(**build) for token, build in raw["builds"].items()},
-        pairs=[Pair(**pair) for pair in raw["pairs"]],
-        votes=raw["votes"],
-        dropped=raw["dropped"],
-    )
-
-
 def _require(condition: bool, path: Path, message: str) -> None:
     if not condition:
         raise RoundError(f"{path}: {message}")
+
+
+def _is_record(item: Any, fields: dict[str, type]) -> bool:
+    return (
+        type(item) is dict
+        and set(item) == set(fields)
+        and all(type(item[name]) is kind for name, kind in fields.items())
+    )
+
+
+def load_key(path: Path) -> Key:
+    raw = read_json(path)
+    _require(
+        type(raw) is dict and set(raw) == {"builds", "pairs", "votes", "dropped"},
+        path,
+        'expected an object with "builds", "pairs", "votes" and "dropped"',
+    )
+    builds, pairs, votes, dropped = raw["builds"], raw["pairs"], raw["votes"], raw["dropped"]
+    _require(
+        type(builds) is dict and all(_is_record(b, BUILD_FIELDS) for b in builds.values()),
+        path,
+        "expected builds as an object of token to build",
+    )
+    _require(
+        type(pairs) is list
+        and all(
+            _is_record(p, PAIR_FIELDS) and p["first"] in builds and p["second"] in builds
+            for p in pairs
+        ),
+        path,
+        "expected pairs as a list of pairs of builds in the key",
+    )
+    pair_ids = {p["id"] for p in pairs}
+    _require(
+        type(votes) is dict
+        and all(k in pair_ids and type(v) is int and v in {1, 2} for k, v in votes.items()),
+        path,
+        "expected votes as an object of pair id to order 1 or 2",
+    )
+    _require(
+        type(dropped) is list and all(type(line) is str for line in dropped),
+        path,
+        "expected dropped as a list of strings",
+    )
+    return Key(
+        builds={token: Build(**build) for token, build in builds.items()},
+        pairs=[Pair(**pair) for pair in pairs],
+        votes=votes,
+        dropped=dropped,
+    )
 
 
 def _parse_build(item: Any, subjects: dict[str, str], path: Path) -> Build:
