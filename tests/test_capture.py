@@ -401,3 +401,22 @@ def test_budget_check_that_reports_a_breach_is_a_breach(
     assert run_lighthouse("http://127.0.0.1:9/", tmp_path) == Budgets(
         1, ["breach  LCP 3100 ms (budget 2500 ms)"]
     )
+
+
+HUNG_PAGE = '<!doctype html><html lang="en"><title>Hung</title><script>while (true) {}</script>'
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_page_that_never_yields_exits_2_and_leaves_no_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "function.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(capture, "ACTION_TIMEOUT_SECONDS", 2.0)
+    build = _build(tmp_path / "site", HUNG_PAGE)
+    assert main([str(build), str(out), "--load-timeout", "2"]) == 2
+    assert str(build) in capsys.readouterr().err
+    assert not (out / "function.json").exists()

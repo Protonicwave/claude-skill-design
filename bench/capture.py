@@ -15,9 +15,12 @@ covers it, horizontal overflow at the phone width, console errors, failed
 requests, head tags, and loads that hit the timeout. With --lighthouse a mobile
 Lighthouse report is written and judged by the skill's check_budgets.py.
 
-Exit code 2 means nothing was captured: BUILD has no index.html or Chrome could
-not be started. Otherwise the exit code is 0 and the elapsed capture time is
-printed beside its budget.
+Exit code 2 means no function.json was written: BUILD has no index.html,
+Chrome could not be started, or a step of the capture failed, such as a
+screenshot of a page whose script never yields. Each browser step waits at most
+30 s. A function.json from an earlier capture is removed first, so OUT never
+holds one that describes another build. Otherwise the exit code is 0 and the
+elapsed capture time is printed beside its budget.
 
 Limits: the keyboard walk stops after 200 presses of Tab, the scroll pass after
 60 viewport heights, Lighthouse after 180 s with every process it started, and
@@ -57,6 +60,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 CAPTURE_BUDGET_SECONDS = 90.0
 DEFAULT_LOAD_TIMEOUT_SECONDS = 30.0
+ACTION_TIMEOUT_SECONDS = 30.0
 MAX_TAB_STOPS = 200
 MAX_SCROLL_STEPS = 60
 SCROLL_STEP_PAUSE_MS = 120
@@ -269,6 +273,7 @@ def _open(run: CaptureRun, viewport: Viewport, *, reduced: bool) -> tuple[Page, 
         has_touch=viewport.is_phone,
         reduced_motion="reduce" if reduced else "no-preference",
     )
+    context.set_default_timeout(ACTION_TIMEOUT_SECONDS * 1000)
     page = context.new_page()
     _watch(page, run)
     page.goto(run.url, wait_until="commit", timeout=run.timeout_ms)
@@ -527,6 +532,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"no index.html in {args.build}", file=sys.stderr)
         return 2
     args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "function.json").unlink(missing_ok=True)
     with serve_folder(args.build) as url, sync_playwright() as playwright:
         try:
             browser = playwright.chromium.launch(channel="chrome")
@@ -535,6 +541,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         try:
             report = capture_build(browser, url, args.out, args.load_timeout * 1000)
+        except PlaywrightError as error:
+            print(f"capture of {args.build} failed: {error.message}", file=sys.stderr)
+            return 2
         finally:
             browser.close()
         if args.lighthouse:
