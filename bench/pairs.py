@@ -101,6 +101,25 @@ class Manifest:
     builds: list[Build]
 
 
+def read_text(path: Path) -> str:
+    """The UTF-8 text at path; RoundError names the file when it is missing or not UTF-8."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError as error:
+        raise RoundError(f"{path} not found") from error
+    except UnicodeDecodeError as error:
+        raise RoundError(f"{path}: not UTF-8 text ({error.reason})") from error
+
+
+# Any: the parsed JSON is checked field by field by each caller.
+def read_json(path: Path) -> Any:
+    """The parsed JSON at path; RoundError names the file when it cannot be read or parsed."""
+    try:
+        return json.loads(read_text(path))
+    except json.JSONDecodeError as error:
+        raise RoundError(f"{path}: not valid JSON ({error})") from error
+
+
 def load_key(path: Path) -> Key:
     raw = json.loads(path.read_text(encoding="utf-8"))
     return Key(
@@ -123,7 +142,11 @@ def _parse_build(item: Any, subjects: dict[str, str], path: Path) -> Build:
         f'expected each build as {{"subject", "arm", "run", "capture"}}, got {item!r}',
     )
     subject, arm, run, capture = item["subject"], item["arm"], item["run"], item["capture"]
-    _require(subject in subjects, path, f"build names unknown subject {subject!r}")
+    _require(
+        isinstance(subject, str) and subject in subjects,
+        path,
+        f"build names unknown subject {subject!r}",
+    )
     _require(isinstance(arm, str) and arm != "", path, f"expected a non-empty arm, got {arm!r}")
     _require(type(run) is int and run > 0, path, f"expected a positive integer run, got {run!r}")
     _require(isinstance(capture, str), path, f"expected a capture path, got {capture!r}")
@@ -131,12 +154,9 @@ def _parse_build(item: Any, subjects: dict[str, str], path: Path) -> Build:
 
 
 def parse_manifest(path: Path) -> Manifest:
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError as error:
-        raise RoundError(f"no manifest.json in {path.parent}") from error
-    except json.JSONDecodeError as error:
-        raise RoundError(f"{path}: not valid JSON ({error})") from error
+    if not path.exists():
+        raise RoundError(f"no manifest.json in {path.parent}")
+    raw = read_json(path)
     _require(
         isinstance(raw, dict) and set(raw) == {"seed", "subjects", "builds"},
         path,
@@ -167,15 +187,8 @@ def parse_manifest(path: Path) -> Manifest:
     _require(
         len({b.arm for b in builds}) >= MIN_ARMS, path, "expected builds from at least two arms"
     )
-    prompts = {name: _read_prompt(path.parent / file) for name, file in subjects.items()}
+    prompts = {name: read_text(path.parent / file).strip() for name, file in subjects.items()}
     return Manifest(seed, prompts, builds)
-
-
-def _read_prompt(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8").strip()
-    except FileNotFoundError as error:
-        raise RoundError(f"subject prompt {path} not found") from error
 
 
 def _check_images(builds: list[Build]) -> None:
@@ -447,12 +460,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise RoundError(f"{args.round} is already paired: key.json exists")
         manifest = parse_manifest(args.round / "manifest.json")
         _check_images(manifest.builds)
+        # Seeded so a round can be paired again identically; the tokens hide
+        # arms from judges reading files, not from anyone holding the seed.
+        key = draw_key(manifest, args.votes, random.Random(manifest.seed))  # noqa: S311
+        if not key.pairs:
+            raise RoundError(f"{args.round}: nothing to pair, no two arms share a subject and run")
     except RoundError as error:
         print(error, file=sys.stderr)
         return 2
-    # Seeded so a round can be paired again identically; the tokens hide arms
-    # from judges reading files, not from anyone holding the seed.
-    key = draw_key(manifest, args.votes, random.Random(manifest.seed))  # noqa: S311
     write_round(args.round, manifest, key)
     print(f"paired {len(key.pairs)} pairs, {len(key.votes)} on the vote page")
     if key.dropped:

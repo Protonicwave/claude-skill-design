@@ -221,6 +221,14 @@ GOOD_BUILD = {"subject": "profiler", "arm": "bare", "run": 1, "capture": "c"}
             "unknown subject 'x'",
         ),
         (
+            {
+                "seed": 1,
+                "subjects": {"profiler": "p.md"},
+                "builds": [GOOD_BUILD | {"subject": ["profiler"]}],
+            },
+            "unknown subject ['profiler']",
+        ),
+        (
             {"seed": 1, "subjects": {"profiler": "p.md"}, "builds": [GOOD_BUILD, GOOD_BUILD]},
             "profiler bare run 1 listed twice",
         ),
@@ -266,3 +274,25 @@ def test_a_run_only_one_arm_has_is_dropped_once_per_other_arm(tmp_path: Path) ->
         "profiler run 2: web-ui-craft has no bare partner",
         "profiler run 2: web-ui-craft has no frontend-design partner",
     ]
+
+
+def test_a_manifest_that_is_not_utf8_exits_2_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tmp_path / "manifest.json").write_bytes(b'{"seed": 1, "subjects": "\xff"}')
+    assert main([str(tmp_path)]) == 2
+    assert "manifest.json" in capsys.readouterr().err
+
+
+def test_arms_that_share_no_subject_and_run_exit_2_and_write_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    builds = [
+        b
+        for b in write_captures(tmp_path, runs=1)
+        if (b["subject"], b["arm"]) in {("profiler", "bare"), ("restaurant", "web-ui-craft")}
+    ]
+    round_dir = write_round(tmp_path, builds)
+    assert main([str(round_dir)]) == 2
+    assert "nothing to pair" in capsys.readouterr().err
+    assert sorted(p.name for p in round_dir.iterdir()) == ["manifest.json"]
