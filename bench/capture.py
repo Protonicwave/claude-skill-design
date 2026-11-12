@@ -20,7 +20,9 @@ not be started. Otherwise the exit code is 0 and the elapsed capture time is
 printed beside its budget.
 
 Limits: the keyboard walk stops after 200 tab stops, the scroll pass after 60
-viewport heights, and Lighthouse after 180 s. Focus inside iframes is not
+viewport heights, Lighthouse after 180 s with every process it started, and the
+budget check after 60 s. A budget check that overruns or crashes is recorded
+as unmeasured, never as a breach. Focus inside iframes is not
 followed, and a focus indicator is judged visible when any pixel around the
 element changes, so a moving video or canvas behind it reads as visible.
 """
@@ -30,7 +32,9 @@ from __future__ import annotations
 import argparse
 import functools
 import json
+import os
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -57,6 +61,7 @@ FOCUS_RING_MARGIN_PX = 8
 FIRST_HTTP_ERROR_STATUS = 400
 LIGHTHOUSE_TIMEOUT_SECONDS = 180.0
 CHECK_BUDGETS_TIMEOUT_SECONDS = 60.0
+TASKKILL_TIMEOUT_SECONDS = 10.0
 MOTION_FRAME_SECONDS = (0.25, 0.75, 1.5, 3.0)
 SCROLL_DEPTHS_PERCENT = (25, 50, 75)
 
@@ -400,22 +405,69 @@ def run_lighthouse(url: str, out: Path) -> Budgets:
     report.unlink(missing_ok=True)
     command = [npx, "--yes", LIGHTHOUSE_PACKAGE, url, "--output=json", f"--output-path={report}"]
     command += ["--quiet", "--chrome-flags=--headless=new"]
-    try:
-        subprocess.run(  # noqa: S603 (arguments are constants and paths this script made)
-            command, check=False, capture_output=True, timeout=LIGHTHOUSE_TIMEOUT_SECONDS
-        )
-    except subprocess.TimeoutExpired:
+    if not _run_bounded(command, LIGHTHOUSE_TIMEOUT_SECONDS):
         return Budgets(2, [f"lighthouse not run: no report within {LIGHTHOUSE_TIMEOUT_SECONDS} s"])
     # check_budgets.py reports a missing or failed report itself, with exit code 2.
-    judged = subprocess.run(  # noqa: S603 (arguments are constants and paths this script made)
-        [sys.executable, str(CHECK_BUDGETS), str(report)],
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=CHECK_BUDGETS_TIMEOUT_SECONDS,
+    try:
+        judged = subprocess.run(  # noqa: S603 (arguments are constants and paths this script made)
+            [sys.executable, str(CHECK_BUDGETS), str(report)],
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=CHECK_BUDGETS_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        return Budgets(
+            2,
+            [
+                "budgets not judged: check_budgets.py gave no result"
+                f" within {CHECK_BUDGETS_TIMEOUT_SECONDS} s"
+            ],
+        )
+    lines = (judged.stdout + judged.stderr).splitlines()
+    breached = any(line.startswith("breach") for line in lines)
+    if judged.returncode in {0, 2} or (judged.returncode == 1 and breached):
+        return Budgets(judged.returncode, lines)
+    # A crash exits 1 too, so exit 1 is a breach only when a breach was printed.
+    message = f"budgets not judged: check_budgets.py exited {judged.returncode} without a breach"
+    return Budgets(2, [message, *lines])
+
+
+def _run_bounded(command: list[str], timeout_seconds: float) -> bool:
+    """Run command with its output discarded; False when it overran and was stopped.
+
+    npx starts node, which starts Chrome, so stopping npx alone would leave both
+    running. The whole process tree is stopped instead.
+    """
+    process = subprocess.Popen(  # noqa: S603 (arguments are constants and paths this script made)
+        command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=sys.platform != "win32",
     )
-    return Budgets(judged.returncode, (judged.stdout + judged.stderr).splitlines())
+    try:
+        process.wait(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        _stop_tree(process)
+        return False
+    return True
+
+
+def _stop_tree(process: subprocess.Popen[bytes]) -> None:
+    if sys.platform == "win32":
+        # The exit code is not checked: taskkill also fails when the tree has
+        # already ended, and kill() below stops the parent either way.
+        subprocess.run(  # noqa: S603 (arguments are constants and a process id)
+            ["taskkill", "/T", "/F", "/PID", str(process.pid)],  # noqa: S607 (a Windows system tool)
+            check=False,
+            capture_output=True,
+            timeout=TASKKILL_TIMEOUT_SECONDS,
+        )
+    else:
+        os.killpg(process.pid, signal.SIGKILL)
+    process.kill()
+    process.wait()
 
 
 def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> FunctionReport:

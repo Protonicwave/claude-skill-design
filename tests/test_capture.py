@@ -2,6 +2,8 @@ import json
 import os
 import shutil
 import socket
+import sys
+import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -10,7 +12,8 @@ import pytest
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
-from capture import main
+import capture
+from capture import Budgets, main, run_lighthouse
 
 CLEAN_PAGE = """<!doctype html>
 <html lang="en">
@@ -129,14 +132,18 @@ def clean(clean_out: Path) -> dict[str, Any]:
     return _report(clean_out)
 
 
-def _failing_npx(folder: Path) -> None:
-    """Put an npx on PATH that exits with an error and writes no report."""
+def _fake_npx(folder: Path, command: str) -> None:
+    """Write an npx into folder that runs one shell command and writes no report."""
     if os.name == "nt":
-        (folder / "npx.cmd").write_text("@exit /b 1\r\n", encoding="utf-8")
+        (folder / "npx.cmd").write_text(f"@{command}\r\n", encoding="utf-8")
     else:
         script = folder / "npx"
-        script.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        script.write_text(f"#!/bin/sh\n{command}\n", encoding="utf-8")
         script.chmod(0o755)
+
+
+def _failing_npx(folder: Path) -> None:
+    _fake_npx(folder, "exit /b 1" if os.name == "nt" else "exit 1")
 
 
 @pytest.fixture(scope="module")
@@ -311,3 +318,71 @@ def test_load_timeout_must_be_positive(tmp_path: Path, seconds: str) -> None:
     with pytest.raises(SystemExit) as raised:
         main([str(tmp_path), str(tmp_path / "out"), "--load-timeout", seconds])
     assert raised.value.code == 2
+
+
+@pytest.fixture
+def npx_bin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A folder searched for npx before the rest of PATH."""
+    folder = tmp_path / "bin"
+    folder.mkdir()
+    monkeypatch.setenv("PATH", f"{folder}{os.pathsep}{os.environ['PATH']}")
+    return folder
+
+
+def test_lighthouse_that_overruns_is_stopped_with_its_children(
+    tmp_path: Path, npx_bin: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The child outlives npx's own process and, until stopped, holds its output.
+    marker = tmp_path / "child-survived"
+    child = tmp_path / "child.py"
+    child.write_text(
+        f"import pathlib, time\ntime.sleep(4)\npathlib.Path({str(marker)!r}).write_text('x')\n",
+        encoding="utf-8",
+    )
+    _fake_npx(npx_bin, f'"{sys.executable}" "{child}"')
+    monkeypatch.setattr(capture, "LIGHTHOUSE_TIMEOUT_SECONDS", 1.0)
+    started = time.monotonic()
+    budgets = run_lighthouse("http://127.0.0.1:9/", tmp_path)
+    assert time.monotonic() - started < 3.5
+    assert budgets == Budgets(2, ["lighthouse not run: no report within 1.0 s"])
+    time.sleep(5)
+    assert not marker.exists()
+
+
+def _fake_check_budgets(
+    tmp_path: Path, npx_bin: Path, monkeypatch: pytest.MonkeyPatch, source: str
+) -> None:
+    _fake_npx(npx_bin, "exit /b 0" if os.name == "nt" else "exit 0")
+    script = tmp_path / "check_budgets.py"
+    script.write_text(source, encoding="utf-8")
+    monkeypatch.setattr(capture, "CHECK_BUDGETS", script)
+
+
+def test_budget_check_that_overruns_is_unmeasured(
+    tmp_path: Path, npx_bin: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fake_check_budgets(tmp_path, npx_bin, monkeypatch, "import time\ntime.sleep(10)\n")
+    monkeypatch.setattr(capture, "CHECK_BUDGETS_TIMEOUT_SECONDS", 1.0)
+    assert run_lighthouse("http://127.0.0.1:9/", tmp_path) == Budgets(
+        2, ["budgets not judged: check_budgets.py gave no result within 1.0 s"]
+    )
+
+
+def test_budget_check_that_crashes_is_unmeasured_not_a_breach(
+    tmp_path: Path, npx_bin: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fake_check_budgets(tmp_path, npx_bin, monkeypatch, "raise RuntimeError('boom')\n")
+    budgets = run_lighthouse("http://127.0.0.1:9/", tmp_path)
+    assert budgets.exit_code == 2
+    assert budgets.lines[0] == "budgets not judged: check_budgets.py exited 1 without a breach"
+    assert "RuntimeError: boom" in budgets.lines
+
+
+def test_budget_check_that_reports_a_breach_is_a_breach(
+    tmp_path: Path, npx_bin: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = "print('breach  LCP 3100 ms (budget 2500 ms)')\nraise SystemExit(1)\n"
+    _fake_check_budgets(tmp_path, npx_bin, monkeypatch, source)
+    assert run_lighthouse("http://127.0.0.1:9/", tmp_path) == Budgets(
+        1, ["breach  LCP 3100 ms (budget 2500 ms)"]
+    )
