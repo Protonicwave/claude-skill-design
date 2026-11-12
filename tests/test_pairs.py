@@ -3,15 +3,26 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from PIL import Image
 
-from pairs import JUDGED_IMAGES, load_key, main
+from pairs import JUDGED_IMAGES, MAX_TILE_HEIGHT_PX, load_key, main
 
 ARMS = ("bare", "frontend-design", "web-ui-craft")
 SUBJECTS = ("profiler", "restaurant")
 
 
+def write_phone_image(path: Path, height_px: int) -> None:
+    """A real PNG, each row's colour giving its depth, so tiles can be traced to rows."""
+    image = Image.new("RGB", (4, height_px))
+    image.putdata([(y % 256, y // 256 % 256, 0) for y in range(height_px) for _ in range(4)])
+    image.save(path)
+
+
 def write_captures(root: Path, *, runs: int = 2) -> list[dict[str, Any]]:
-    """Fake captures outside any round, each image's bytes naming its build."""
+    """Fake captures outside any round, each image's bytes naming its build.
+
+    The phone whole-page image is a real PNG instead, since pairing reads its height.
+    """
     builds = []
     for subject in SUBJECTS:
         for arm in ARMS:
@@ -20,6 +31,7 @@ def write_captures(root: Path, *, runs: int = 2) -> list[dict[str, Any]]:
                 folder.mkdir(parents=True)
                 for name in JUDGED_IMAGES:
                     (folder / name).write_bytes(f"{subject} {arm} {run} {name}".encode())
+                write_phone_image(folder / "phone-full.png", 100)
                 builds.append({"subject": subject, "arm": arm, "run": run, "capture": str(folder)})
     return builds
 
@@ -331,3 +343,54 @@ def test_capture_paths_are_kept_relative_to_the_round(tmp_path: Path) -> None:
     assert main([str(round_dir)]) == 0
     captures = {build.capture for build in load_key(round_dir / "key.json").builds.values()}
     assert all(capture.startswith("../captures/") for capture in captures)
+
+
+def _page_images(brief: str, page: str) -> list[str]:
+    section = brief.split(f"## Page {page}", 1)[1].split("## Page", 1)[0]
+    return [line.rsplit("/", 1)[1] for line in section.splitlines() if line.startswith("- ")]
+
+
+def _brief_for(round_dir: Path, token: str) -> tuple[str, str]:
+    """A brief showing token's build, and which page it is there."""
+    for pair in load_key(round_dir / "key.json").pairs:
+        if token in (pair.first, pair.second):
+            page = "A" if pair.first == token else "B"
+            return (round_dir / "briefs" / f"{pair.id}-1.md").read_text(encoding="utf-8"), page
+    raise AssertionError(f"{token} is in no pair")
+
+
+def test_a_tall_phone_image_is_judged_as_tiles_in_order(tmp_path: Path) -> None:
+    builds = write_captures(tmp_path)
+    write_phone_image(Path(builds[0]["capture"]) / "phone-full.png", 12_000)
+    round_dir = write_round(tmp_path, builds)
+    assert main([str(round_dir)]) == 0
+    key_builds = load_key(round_dir / "key.json").builds.items()
+    token = next(t for t, build in key_builds if build.capture == builds[0]["capture"])
+    tiles = [f"phone-full-{number}.png" for number in range(1, 6)]
+    brief, page = _brief_for(round_dir, token)
+    assert _page_images(brief, page)[-5:] == tiles
+    assert "phone-full.png" not in _page_images(brief, page)
+    for number, name in enumerate(tiles):
+        with Image.open(round_dir / "blind" / token / name) as tile:
+            top = number * MAX_TILE_HEIGHT_PX
+            assert tile.size == (4, min(MAX_TILE_HEIGHT_PX, 12_000 - top))
+            assert tile.getpixel((0, 0)) == (top % 256, top // 256 % 256, 0)
+
+
+def test_a_phone_image_within_one_tile_is_judged_whole(paired_round: Path) -> None:
+    token, _ = next(iter(load_key(paired_round / "key.json").builds.items()))
+    brief, page = _brief_for(paired_round, token)
+    assert _page_images(brief, page)[-1] == "phone-full.png"
+    assert not list((paired_round / "blind" / token).glob("phone-full-*.png"))
+
+
+def test_a_phone_image_that_is_not_a_png_exits_2_naming_it_and_writes_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    builds = write_captures(tmp_path)
+    broken = Path(builds[2]["capture"]) / "phone-full.png"
+    broken.write_bytes(b"not a png")
+    round_dir = write_round(tmp_path, builds)
+    assert main([str(round_dir)]) == 2
+    assert str(broken) in capsys.readouterr().err
+    assert sorted(p.name for p in round_dir.iterdir()) == ["manifest.json"]

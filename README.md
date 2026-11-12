@@ -94,7 +94,7 @@ results.md      written by score.py
     "builds": [{"subject": "profiler", "arm": "bare", "run": 1, "capture": "captures/profiler-bare-1"}]}
    ```
 
-5. Pair: `uv run python bench/pairs.py bench/runs/<round>`. It pairs run i of each arm with run i of every other arm within a subject, copies each build's judged images under a random token, and writes a judge brief per pair and order. `--votes N` sets how many pairs go on the vote page (default 10). It refuses a round that already has `key.json`, since re-pairing would orphan its verdicts.
+5. Pair: `uv run python bench/pairs.py bench/runs/<round>`. It pairs run i of each arm with run i of every other arm within a subject, copies each build's judged images under a random token, and writes a judge brief per pair and order. A phone whole-page image taller than 2,600 px reaches judges as tiles of that height, since a taller image is shrunk before they see it. `--votes N` sets how many pairs go on the vote page (default 10). It refuses a round that already has `key.json`, since re-pairing would orphan its verdicts.
 6. Judge: give each file in `briefs/` verbatim as the prompt of one fresh subagent. Each writes `verdicts/<pair>-<order>.json`. Judges see the subject and images only, never code, arm names or builder briefs.
 7. Vote: open `vote.html`, choose a page or a tie for each pair, export, and save `votes.json` in the round folder.
 8. Score: `uv run python bench/score.py bench/runs/<round>` writes `results.md`: judge tallies per arm pair and criterion, where a choice counts only when both orders agree; agreement between judges and votes; and each build's function checks.
