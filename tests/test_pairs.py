@@ -296,3 +296,26 @@ def test_arms_that_share_no_subject_and_run_exit_2_and_write_nothing(
     assert main([str(round_dir)]) == 2
     assert "nothing to pair" in capsys.readouterr().err
     assert sorted(p.name for p in round_dir.iterdir()) == ["manifest.json"]
+
+
+def test_output_left_by_an_unfinished_pairing_is_replaced(tmp_path: Path) -> None:
+    round_dir = write_round(tmp_path, write_captures(tmp_path))
+    (round_dir / "briefs").mkdir()
+    (round_dir / "briefs" / "p99-1.md").write_text("stale")
+    (round_dir / "blind" / "ffffff").mkdir(parents=True)
+    assert main([str(round_dir)]) == 0
+    assert not (round_dir / "briefs" / "p99-1.md").exists()
+    assert not (round_dir / "blind" / "ffffff").exists()
+
+
+def test_verdicts_without_a_key_exit_2_and_are_kept(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    round_dir = write_round(tmp_path, write_captures(tmp_path))
+    verdict = round_dir / "verdicts" / "p01-1.json"
+    verdict.parent.mkdir()
+    verdict.write_text("{}")
+    assert main([str(round_dir)]) == 2
+    assert "verdicts" in capsys.readouterr().err
+    assert verdict.exists()
+    assert not (round_dir / "key.json").exists()

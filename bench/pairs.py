@@ -22,8 +22,11 @@ with N pairs (default 10) chosen to cover every subject and arm pair where N
 allows, and key.json, the only file that says which build is which.
 
 Exit code 2 means nothing was written: the manifest or a prompt is missing or
-malformed, a capture lacks an image, or ROUND has a key.json already, since
-re-pairing would orphan any verdicts written against it.
+malformed, a capture lacks an image, no two arms share a subject and run, or
+ROUND has a key.json already, since re-pairing would orphan any verdicts
+written against it. A verdicts/ folder holding files without key.json is
+refused for the same reason. Briefs and blind images left by a pairing that
+failed part-way are replaced.
 """
 
 from __future__ import annotations
@@ -420,6 +423,10 @@ def _vote_section(pair: Pair, order: int, prompt: str) -> str:
 
 
 def write_round(round_dir: Path, manifest: Manifest, key: Key) -> None:
+    # Left by a pairing that failed part-way; its tokens and pair ids are not this key's.
+    for stale in (round_dir / "blind", round_dir / "briefs"):
+        if stale.exists():
+            shutil.rmtree(stale)
     for token, build in key.builds.items():
         folder = round_dir / "blind" / token
         folder.mkdir(parents=True, exist_ok=True)
@@ -458,6 +465,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if (args.round / "key.json").exists():
             raise RoundError(f"{args.round} is already paired: key.json exists")
+        verdicts = args.round / "verdicts"
+        if verdicts.is_dir() and any(verdicts.iterdir()):
+            raise RoundError(f"{verdicts} holds verdicts with no key.json; move them away first")
         manifest = parse_manifest(args.round / "manifest.json")
         _check_images(manifest.builds)
         # Seeded so a round can be paired again identically; the tokens hide
