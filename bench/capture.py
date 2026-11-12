@@ -31,7 +31,8 @@ A date input, a shadow root or an iframe is one tab stop however many presses
 of Tab cross it, since the document's active element stays the same, so focus
 inside it is not judged separately. A focus indicator is judged visible when
 any pixel around the element changes, so a moving video or canvas behind it
-reads as visible.
+reads as visible. Overflow counts only content that widens the layout: content
+clipped by overflow: hidden on html or body reads as 0 px.
 """
 
 from __future__ import annotations
@@ -130,7 +131,9 @@ HEAD_TAGS_JS = """
 """
 
 # The layout width, not innerWidth: mobile Chrome zooms out to fit content
-# wider than the screen, which widens innerWidth to match it.
+# wider than the screen, which widens innerWidth to match it. Content clipped
+# by overflow: hidden on html or body does not widen the layout, so it reads
+# as 0 px although the reader cannot reach it.
 OVERFLOW_JS = "() => document.documentElement.scrollWidth - document.documentElement.clientWidth"
 
 
