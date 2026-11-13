@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from PIL import Image
 
-from pairs import JUDGED_IMAGES, MAX_TILE_HEIGHT_PX, load_key, main
+from pairs import CAPTURE_IMAGES, MAX_TILE_HEIGHT_PX, load_key, main
 
 ARMS = ("bare", "frontend-design", "web-ui-craft")
 SUBJECTS = ("profiler", "restaurant")
@@ -29,7 +29,7 @@ def write_captures(root: Path, *, runs: int = 2) -> list[dict[str, Any]]:
             for run in range(1, runs + 1):
                 folder = root / "captures" / f"{subject}-{arm}-{run}"
                 folder.mkdir(parents=True)
-                for name in JUDGED_IMAGES:
+                for name in CAPTURE_IMAGES:
                     (folder / name).write_bytes(f"{subject} {arm} {run} {name}".encode())
                 write_phone_image(folder / "phone-full.png", 100)
                 builds.append({"subject": subject, "arm": arm, "run": run, "capture": str(folder)})
@@ -372,9 +372,36 @@ def test_a_tall_phone_image_is_judged_as_tiles_in_order(tmp_path: Path) -> None:
     assert "phone-full.png" not in _page_images(brief, page)
     for number, name in enumerate(tiles):
         with Image.open(round_dir / "blind" / token / name) as tile:
-            top = number * MAX_TILE_HEIGHT_PX
-            assert tile.size == (4, min(MAX_TILE_HEIGHT_PX, 12_000 - top))
+            top = number * 2400
+            assert tile.size == (4, 2400)
             assert tile.getpixel((0, 0)) == (top % 256, top // 256 % 256, 0)
+
+
+def test_a_phone_image_just_over_one_tile_is_cut_into_even_halves(tmp_path: Path) -> None:
+    builds = write_captures(tmp_path)
+    write_phone_image(Path(builds[0]["capture"]) / "phone-full.png", MAX_TILE_HEIGHT_PX + 1)
+    round_dir = write_round(tmp_path, builds)
+    assert main([str(round_dir)]) == 0
+    key_builds = load_key(round_dir / "key.json").builds.items()
+    token = next(t for t, build in key_builds if build.capture == builds[0]["capture"])
+    heights = []
+    for name in ("phone-full-1.png", "phone-full-2.png"):
+        with Image.open(round_dir / "blind" / token / name) as tile:
+            heights.append(tile.height)
+    assert heights == [1301, 1300]
+
+
+def test_a_phone_image_too_large_to_decode_exits_2_naming_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    builds = write_captures(tmp_path)
+    huge = Path(builds[0]["capture"]) / "phone-full.png"
+    write_phone_image(huge, 1000)
+    # Pillow refuses an image over twice MAX_IMAGE_PIXELS; lowering it stands in for a vast one.
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1000)
+    round_dir = write_round(tmp_path, builds)
+    assert main([str(round_dir)]) == 2
+    assert str(huge) in capsys.readouterr().err
 
 
 def test_a_phone_image_within_one_tile_is_judged_whole(paired_round: Path) -> None:

@@ -58,7 +58,7 @@ Choice = Literal["A", "B", "tie"]
 CHOICES: tuple[Choice, ...] = get_args(Choice)
 CRITERIA = ("first_screen", "whole_page", "imagery", "type", "motion", "fit", "overall")
 PHONE_FULL = "phone-full.png"
-JUDGED_IMAGES = (
+CAPTURE_IMAGES = (
     "desktop-first.png",
     "desktop-full.png",
     *(scroll_image("desktop", percent) for percent in SCROLL_DEPTHS_PERCENT),
@@ -249,7 +249,7 @@ def parse_manifest(path: Path) -> Manifest:
 
 def _check_images(round_dir: Path, builds: list[Build]) -> None:
     for build in builds:
-        for name in JUDGED_IMAGES:
+        for name in CAPTURE_IMAGES:
             path = round_dir / build.capture / name
             if not path.is_file():
                 raise RoundError(f"capture image {path} not found")
@@ -258,7 +258,7 @@ def _check_images(round_dir: Path, builds: list[Build]) -> None:
         try:
             with Image.open(phone_full) as image:
                 image.load()
-        except OSError as error:
+        except (OSError, Image.DecompressionBombError) as error:
             raise RoundError(f"capture image {phone_full} cannot be read: {error}") from error
 
 
@@ -352,23 +352,23 @@ $page_b
 """)  # noqa: E501 (each brief field is one line, as the subagent brief format expects)
 
 
-def _tile_phone_image(folder: Path) -> list[str]:
-    """Cut folder's phone whole-page image into tiles if it is tall; return the names judged."""
+def _cut_phone_tiles(folder: Path) -> list[str]:
+    """Cut folder's phone whole-page image into even tiles if it is tall; return their names.
+
+    Even tiles keep the last one from being a sliver a judge cannot read.
+    """
     with Image.open(folder / PHONE_FULL) as image:
         if image.height <= MAX_TILE_HEIGHT_PX:
             return [PHONE_FULL]
+        count = -(-image.height // MAX_TILE_HEIGHT_PX)
+        tile_height = -(-image.height // count)
         tiles = []
-        for number, top in enumerate(range(0, image.height, MAX_TILE_HEIGHT_PX), start=1):
+        for number, top in enumerate(range(0, image.height, tile_height), start=1):
             name = f"phone-full-{number}.png"
-            bottom = min(top + MAX_TILE_HEIGHT_PX, image.height)
+            bottom = min(top + tile_height, image.height)
             image.crop((0, top, image.width, bottom)).save(folder / name)
             tiles.append(name)
         return tiles
-
-
-def _judged_images(folder: Path) -> list[str]:
-    tiles = _tile_phone_image(folder)
-    return [tile for name in JUDGED_IMAGES for tile in (tiles if name == PHONE_FULL else [name])]
 
 
 def _image_list(folder: Path, names: list[str]) -> str:
@@ -513,9 +513,12 @@ def write_round(round_dir: Path, manifest: Manifest, key: Key) -> None:
     for token, build in key.builds.items():
         folder = round_dir / "blind" / token
         folder.mkdir(parents=True, exist_ok=True)
-        for name in JUDGED_IMAGES:
+        for name in CAPTURE_IMAGES:
             shutil.copyfile(round_dir / build.capture / name, folder / name)
-        judged[token] = _judged_images(folder)
+        tiles = _cut_phone_tiles(folder)
+        judged[token] = [
+            tile for name in CAPTURE_IMAGES for tile in (tiles if name == PHONE_FULL else [name])
+        ]
     (round_dir / "briefs").mkdir(exist_ok=True)
     (round_dir / "verdicts").mkdir(exist_ok=True)
     for pair in key.pairs:
