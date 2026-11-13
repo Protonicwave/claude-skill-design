@@ -26,10 +26,11 @@ holds one that describes another build. Otherwise the exit code is 0 and the
 elapsed capture time is printed beside its budget.
 
 Limits: the keyboard walk stops after 200 presses of Tab, the scroll pass after
-60 viewport heights, the clipped-text check after 5,000 text nodes and 20
-elements reported, Lighthouse after 180 s with every process it started, and
-the budget check after 60 s. A budget check that overruns or crashes is
-recorded as unmeasured, never as a breach.
+60 viewport heights, the clipped-text check after 5,000 text nodes or 20
+elements reported (recorded as ended_by "limit", as the walk's is), Lighthouse
+after 180 s with every process it started, and the budget check after 60 s. A
+budget check that overruns or crashes is recorded as unmeasured, never as a
+breach.
 
 A date input, a shadow root or an iframe is one tab stop however many presses
 of Tab cross it, since the document's active element stays the same, so focus
@@ -146,8 +147,9 @@ FOCUSED_STOP_JS = f"""
 
 # Takes [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED] and returns the labels of the
 # elements holding text cut by the edge of a clipping ancestor or the screen's
-# edge. The walk up stops at body: overflow set there clips at the screen's
-# edge, which the last check covers.
+# edge, and whether the walk reached the end of the text or a limit. The walk
+# up stops at body: overflow set there clips at the screen's edge, which the
+# last check covers.
 CLIPPED_TEXT_JS = f"""
 ([maxNodes, maxReported]) => {{
   {ELEMENT_LABEL_JS}
@@ -168,9 +170,10 @@ CLIPPED_TEXT_JS = f"""
   }};
   const clipped = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let endedBy = 'limit';
   for (let n = 0; n < maxNodes && clipped.size < maxReported; n++) {{
     const node = walker.nextNode();
-    if (!node) break;
+    if (!node) {{ endedBy = 'end'; break; }}
     const el = node.parentElement;
     if (!el || clipped.has(el) || !node.textContent.trim()) continue;
     if (getComputedStyle(el).visibility !== 'visible') continue;
@@ -179,7 +182,7 @@ CLIPPED_TEXT_JS = f"""
     const rects = [...range.getClientRects()].filter((r) => r.width > 0);
     if (rects.some((r) => isClipped(el, r))) clipped.add(el);
   }}
-  return [...clipped].map(label);
+  return {{labels: [...clipped].map(label), ended_by: endedBy}};
 }}
 """
 
@@ -266,6 +269,7 @@ class FunctionReport:
     keyboard_walk: KeyboardWalk
     phone_overflow_px: int
     phone_clipped_text: list[str]
+    phone_clipped_text_ended_by: str
     head: HeadTags
     console_errors: list[str]
     failed_requests: list[str]
@@ -555,10 +559,7 @@ def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float)
     desktop, taken_at = shoot_viewport(run, DESKTOP)
     phone, phone_taken_at = shoot_viewport(run, PHONE)
     overflow_px = int(phone.evaluate(OVERFLOW_JS))
-    clipped_text = [
-        str(label)
-        for label in phone.evaluate(CLIPPED_TEXT_JS, [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED])
-    ]
+    clipped = phone.evaluate(CLIPPED_TEXT_JS, [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED])
     phone.context.close()
     head = read_head(desktop)
     violations = run_axe(desktop)
@@ -571,7 +572,8 @@ def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float)
         axe_violations=violations,
         keyboard_walk=walk,
         phone_overflow_px=max(overflow_px, 0),
-        phone_clipped_text=clipped_text,
+        phone_clipped_text=[str(label) for label in clipped["labels"]],
+        phone_clipped_text_ended_by=str(clipped["ended_by"]),
         head=head,
         console_errors=sorted(run.events.console_errors),
         failed_requests=sorted(run.events.failed_requests),

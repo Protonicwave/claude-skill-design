@@ -235,6 +235,18 @@ def test_budget_exit_codes_are_named(round_dir: Path, exit_code: int, shown: str
     assert f"| {shown} | 20.0 |" in results(round_dir)
 
 
+def test_clipped_text_cut_short_by_a_limit_is_marked(round_dir: Path) -> None:
+    write_function(
+        round_dir,
+        "t2",
+        function_report(
+            phone_clipped_text=['p#lede "Fresh pasta"', 'span "Open daily"'],
+            phone_clipped_text_ended_by="limit",
+        ),
+    )
+    assert "| profiler | craft | 1 | 0 | 0 | 0 | end | 0 | 2+ | 0 |" in results(round_dir)
+
+
 def test_a_missing_function_report_exits_2_naming_it(
     round_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -272,6 +284,7 @@ def test_a_moved_round_still_finds_its_captures(round_dir: Path) -> None:
         {"phone_overflow_px": "40"},
         {"phone_overflow_px": True},
         {"phone_clipped_text": "p#lede"},
+        {"phone_clipped_text_ended_by": 3},
         {"elapsed_seconds": "slow"},
         {"budgets": {"exit_code": 7, "lines": []}},
         {"budgets": "breach"},

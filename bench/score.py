@@ -51,6 +51,7 @@ class FunctionSummary:
     walk_end: str
     overflow_px: int
     clipped_text: int
+    clipped_text_complete: bool
     console_errors: int
     failed_requests: int
     missing_head: tuple[str, ...]
@@ -109,6 +110,9 @@ def read_function(path: Path) -> FunctionSummary:
         walk_end=_field(path, walk, "ended_by", str),
         overflow_px=_field(path, raw, "phone_overflow_px", int),
         clipped_text=len(_field(path, raw, "phone_clipped_text", list)),
+        # Captures made before the walk recorded its end hold no such field.
+        clipped_text_complete="phone_clipped_text_ended_by" not in raw
+        or _field(path, raw, "phone_clipped_text_ended_by", str) == "end",
         console_errors=sum(
             not str(line).startswith(RESOURCE_ERROR_PREFIX) for line in console_errors
         ),
@@ -335,7 +339,7 @@ def _build_row(build: Build, f: FunctionSummary) -> list[object]:
         f.covered_focus,
         f.walk_end,
         f.overflow_px,
-        f.clipped_text,
+        f.clipped_text if f.clipped_text_complete else f"{f.clipped_text}+",
         f.console_errors,
         f.failed_requests,
         ", ".join(f.missing_head) or "none",

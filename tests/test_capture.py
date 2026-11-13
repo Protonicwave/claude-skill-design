@@ -514,6 +514,7 @@ def endless(_chrome: None, tmp_path_factory: pytest.TempPathFactory) -> dict[str
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(capture, "MAX_TAB_STOPS", 2)
         patch.setattr(capture, "MAX_SCROLL_STEPS", 3)
+        patch.setattr(capture, "MAX_TEXT_NODES", 1)
         return _capture(_build(root / "site", ENDLESS_PAGE), root / "out")
 
 
@@ -521,6 +522,14 @@ def test_walk_stops_at_the_tab_stop_limit(endless: dict[str, Any]) -> None:
     walk = endless["keyboard_walk"]
     assert walk["ended_by"] == "limit"
     assert len(walk["stops"]) == 2
+
+
+def test_clipped_text_walk_records_its_limit(endless: dict[str, Any]) -> None:
+    assert endless["phone_clipped_text_ended_by"] == "limit"
+
+
+def test_clipped_text_walk_records_reaching_the_end(clean: dict[str, Any]) -> None:
+    assert clean["phone_clipped_text_ended_by"] == "end"
 
 
 def test_page_that_grows_on_scroll_is_captured(endless: dict[str, Any]) -> None:
