@@ -25,7 +25,7 @@ The revision did what it was for: only one page out of eight showed a placeholde
 
 ### Findings
 - Seven builders left no placeholder on the page. Both profiler builders gave the install command as `pip install heapwise`, from the product's name, and reported it as an assumption; no judge called it invented. Charity run 1 numbered its sessions 1 to 12 along a March to June scale, which three verdicts named as better than the other pages' invented dates.
-- Charity run 2 left `[session dates]` beside the session picker, which the revised rule forbids, since the picker serves the primary action. It is the only placeholder judges named (5 of 32 verdicts, all on this page), and it decided the tie.
+- Charity run 2 left `[session dates]` beside the session picker, which the revision meant to rule out. Its wording at 1e53857 kept placeholders off the first screen and out of the closing section, and said the primary action is never left blank, but did not name the controls that serve the action, so a builder could read the picker as outside it. Commit 1f34e70, after the round, names them. It is the only placeholder judges named (5 of 32 verdicts, all on this page), and it decided the tie.
 - Judges named invented facts in 18 of 32 verdicts (23 in round four), every time on the other arm's page. Fit went to web-ui-craft 8 of 8 against bare and 6 to 1 with 1 tie against frontend-design.
 - Charity run 1 added one claim the subject did not give, that balsam is invasive and crowds out native plants. It is general knowledge rather than a fact a visitor acts on, and no judge named it.
 
@@ -60,4 +60,4 @@ Both orders agreed on overall for 15 of 16 pairs and the first page shown was ch
 ### Findings
 - Round five changed the arm by one commit against round four, so the change on whole page against frontend-design, from 3 to 5 in round four to 2 to 2, can be traced to it, though build-to-build variation is of the same size.
 - Five builders were resumed after a usage limit stopped them. One (profiler run 1) had already finished its page and reported only; the other four finished their checks after resuming.
-- Faults for a later revision: placeholders next to the primary action are still possible when the builder reads "primary action" as only the button; a run of identical dark bands still loses whole page on the restaurant subject; and one dashboard ignored the first-frame rule for its live layer.
+- Faults for a later revision: the placeholder gap above, closed in 1f34e70 but not yet measured; a run of identical dark bands still loses whole page on the restaurant subject; and one dashboard ignored the first-frame rule for its live layer.
