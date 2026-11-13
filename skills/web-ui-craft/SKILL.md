@@ -99,6 +99,12 @@ Treat the first build as a draft.
    ```
 
    The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. A piece that plays itself is caught at a random point of its loop: add `--force-prefers-reduced-motion` for the finished frame, and take one more screenshot without it to see a frame mid-loop. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
+
+   Then measure the phone layout over the whole page, not only the part you looked at, and fix every `breach` (exit code 1) until it passes:
+
+   ```
+   python <skill-dir>/scripts/check_phone.py <page>.html
+   ```
 3. Measure the page rather than estimating it. Serve it over HTTP (for a static folder, `python -m http.server` in that folder), run Lighthouse in its default mobile profile, then read the report with the budget reader:
 
    ```
@@ -148,6 +154,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
 - `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
+- `scripts/check_phone.py`: measures how far the page runs past a 375 px screen and names the elements responsible, used in step 5.
 - `scripts/check_budgets.py`: reads a Lighthouse report and compares it with the page budgets, used in step 5.
 
 The evidence behind every rule is in the `research/` folder of the repository this skill is published from.
