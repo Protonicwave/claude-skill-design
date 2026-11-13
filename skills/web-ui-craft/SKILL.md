@@ -58,7 +58,12 @@ Rules for the brief:
 - **Compare layouts before choosing one.** Sketch two or three genuinely different first screens (not one layout with the image moved) and pick by the subject's primary job. The first layout that comes to mind is usually the template.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
 - **One name per action.** The button that says "Publish" produces a confirmation that says "Published", not "Saved". The interface's vocabulary is how people find their way around it.
-- **Only facts you were given.** Every fact a visitor could act on or repeat (a date, time, place, price, count, version, command, option, default, licence, rule or named person) comes from the subject, the user or the repository. When the page wants one that was not supplied, write the line so it does not need it, or show a visible placeholder in square brackets, such as `[start date]`, and list each one in the report. A plausible invented fact misleads the visitor, and someone else has to find it and take it out. A mock-up may invent the records it displays (names, identifiers, figures), but not the product's own commands, options, prices or limits, which a visitor would copy or rely on.
+- **Only facts you were given.** Every fact a visitor could act on or repeat (a date, time, place, price, count, version, command, option, default, licence, rule or named person) comes from the subject, the user or the repository. A plausible invented fact misleads the visitor, and someone else has to find it and take it out. A visible gap costs too: a page that shows brackets reads as unfinished. So when the page wants a fact nobody supplied:
+  - **Write around it first.** Most lines that seem to need a date, price or rule work without one: "every other Thursday, spring to autumn" rather than a list of dates the subject never gave. A section with nothing true left to say is cut, not padded.
+  - **Never leave the primary action blank.** When it needs a value nobody supplied, such as the identifier an install or download takes, use the one the subject makes obvious (the product's own name) and list it in the report as an assumption to confirm.
+  - **Otherwise mark the gap.** A fact the page cannot do without becomes a placeholder in square brackets, such as `[start date]`, kept off the first screen and out of the closing section, and listed in the report.
+
+  A mock-up may invent the records it displays (names, identifiers, figures), but not the product's own commands, options, prices or limits, which a visitor would copy or rely on.
 
 Read `references/exemplars.md` when choosing a direction or signature, `references/visual-system.md` when setting palette, type, layout and depth, and the motion section of `references/interaction.md` when writing the Motion line.
 
@@ -131,7 +136,7 @@ Phone:        pass, or the overflow left and why
 Screenshots:  the widths and colour schemes looked at
 Lighthouse:   LCP, CLS, total blocking time and script KiB against budget, or what stopped it
 Reference:    the site, the largest gap and what was done about it
-Placeholders: each fact left for the user to supply
+Placeholders: each fact left for the user to supply, and each assumption to confirm
 Unverified:   anything else not checked, such as rendered contrast without a browser
 ```
 

@@ -103,7 +103,7 @@ A two-tone headline (a statement in full ink and its continuation dimmed, as on 
 | Default | Instead |
 |---|---|
 | "Build faster. Ship smarter.", "Unlock the power of", "Supercharge your", "seamless", "revolutionise" | Plain, specific copy that names the audience and what is different |
-| Lorem-like filler, invented testimonials, and plausible facts nobody supplied (dates, places, prices, counts, versions, options, rules) | Facts from the subject only: copy that does not need the missing fact, or a visible placeholder such as `[start date]`, listed in the report |
+| Lorem-like filler, invented testimonials, and plausible facts nobody supplied (dates, places, prices, counts, versions, options, rules) | Facts from the subject only: copy that does not need the missing fact, or a placeholder such as `[start date]` kept off the first screen, the primary action and the closing section, listed in the report |
 | A button that says one thing and a confirmation that says another ("Publish", then "Saved") | One name per action through the whole flow |
 | Errors that apologise or stay vague ("Oops, something went wrong") | What happened and how to fix it, in the interface's voice |
 | Forms with no validation, error, empty or loading states | Every state designed (see `interaction.md`) |
