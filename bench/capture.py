@@ -20,7 +20,8 @@ Lighthouse report is written and judged by the skill's check_budgets.py.
 
 Exit code 2 means no function.json was written: BUILD has no index.html,
 Chrome could not be started, or a step of the capture failed, such as a
-screenshot of a page whose script never yields. Each browser step waits at most
+screenshot of a page whose script never yields or any step after the
+Playwright driver process has stopped. Each browser step waits at most
 30 s. A function.json from an earlier capture is removed first, so OUT never
 holds one that describes another build. Otherwise the exit code is 0 and the
 elapsed capture time is printed beside its budget.
@@ -99,6 +100,10 @@ FIRST_HTTP_ERROR_STATUS = 400
 LIGHTHOUSE_TIMEOUT_SECONDS = 180.0
 CHECK_BUDGETS_TIMEOUT_SECONDS = 60.0
 TASKKILL_TIMEOUT_SECONDS = 10.0
+
+# Once its driver process has stopped, Playwright raises a bare Exception with
+# this text from every call, not its own Error.
+DRIVER_STOPPED_MESSAGE = "Connection closed while reading from the driver"
 
 LIGHTHOUSE_PACKAGE = "lighthouse@13.6.0"
 CHECK_BUDGETS = (
@@ -564,6 +569,19 @@ def _stop_tree(process: subprocess.Popen[bytes]) -> None:
     process.wait()
 
 
+def _driver_stopped(error: Exception) -> bool:
+    return DRIVER_STOPPED_MESSAGE in str(error)
+
+
+def _close(browser: Browser) -> None:
+    try:
+        browser.close()
+    except Exception as error:
+        # A stopped driver has taken Chrome with it, so there is nothing left to close.
+        if not _driver_stopped(error):
+            raise
+
+
 def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float) -> FunctionReport:
     started = time.monotonic()
     run = CaptureRun(browser, url, out, load_timeout_ms, PageEvents())
@@ -623,11 +641,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         try:
             report = capture_build(browser, url, args.out, args.load_timeout * 1000)
-        except PlaywrightError as error:
-            print(f"capture of {args.build} failed: {error.message}", file=sys.stderr)
+        except Exception as error:
+            if not (isinstance(error, PlaywrightError) or _driver_stopped(error)):
+                raise
+            print(f"capture of {args.build} failed: {error}", file=sys.stderr)
             return 2
         finally:
-            browser.close()
+            _close(browser)
         if args.lighthouse:
             report = replace(report, budgets=run_lighthouse(url, args.out))
     (args.out / "function.json").write_text(

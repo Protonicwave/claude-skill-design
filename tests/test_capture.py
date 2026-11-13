@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from playwright.sync_api import BrowserType, sync_playwright
+from playwright.sync_api import Browser, BrowserType, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
 
 import capture
@@ -497,6 +497,23 @@ def test_chrome_that_cannot_start_exits_2(
     build = _build(tmp_path / "site", CLEAN_PAGE)
     assert main([str(build), str(tmp_path / "out")]) == 2
     assert "Chrome could not be started: no Chrome here" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_driver_that_dies_mid_capture_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    capture_build = capture.capture_build
+
+    def kill_driver_then_capture(browser: Browser, *args: Any) -> capture.FunctionReport:
+        # Playwright offers no public handle on its driver process.
+        browser._impl_obj._connection._transport._proc.kill()  # type: ignore[attr-defined]
+        return capture_build(browser, *args)
+
+    monkeypatch.setattr(capture, "capture_build", kill_driver_then_capture)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    assert main([str(build), str(tmp_path / "out")]) == 2
+    assert f"capture of {build} failed" in capsys.readouterr().err
 
 
 # Each scroll lengthens the page by a screen, so only the step limit ends the pass.
