@@ -81,44 +81,59 @@ Revise the brief, then build.
 - **Design every state.** Hover, active, focus-visible, disabled, loading, empty, error, success, long content and short content. Generated UI is weakest here, and the fixes are cheapest here.
 - **Keep spectacle cheap and optional.** Heavy effects (WebGL, video, large blur) live in one isolated layer within the brief's budget, start after first paint, have a static fallback, and sit behind `prefers-reduced-motion: no-preference`.
 
-## 5. Critique and cut
+## 5. Check, critique and cut
 
-Treat the first build as a draft.
+Treat the first build as a draft. Run all five checks, fix what they find, and give each one a line in the report. A check that cannot run gets a line saying what stopped it; a missing line is a skipped check.
 
-1. Run the static checker, using the skill's own directory for the script path. It needs Python 3.12 or later and no packages. Point it at the whole front-end source, not only the files you changed: the focus and reduced-motion rules look for a global style anywhere in the scan, so a partial scan reports false defects.
+1. **Static scan** of the whole front-end source, not only the files you changed, since the focus and reduced-motion rules look for a global style anywhere in the scan. Fix every `defect` (exit code 1); change each `tell` or say why it stays. It needs Python 3.12 or later and no packages.
 
    ```
    python <skill-dir>/scripts/check_slop.py <front-end source folder>
    ```
 
-   Fix every `defect` (exit code 1 means at least one remains). For every `tell`, change it or say in your report why it stays. The checker reads source text only, so a clean result is necessary, not sufficient.
-2. Render the page and look at it at 1440 px and 375 px wide, in both colour schemes if it has two. Use a browser tool if the session has one. Otherwise most machines have headless Chrome or Edge; write screenshots and the browser profile to a temporary folder, then read the images:
+2. **Phone overflow** over the whole page. Fix every `breach` (exit code 1) until it passes.
+
+   ```
+   python <skill-dir>/scripts/check_phone.py <page>.html
+   ```
+
+3. **Screenshots** at 1440 px and 375 px, in both colour schemes if there are two, then look at them. Use a browser tool if the session has one, and tab through every flow with it. Otherwise use headless Chrome or Edge, with the profile and images in a temporary folder:
 
    ```
    chrome --headless=new --hide-scrollbars --user-data-dir=<temp>/profile --window-size=1440,2600 --virtual-time-budget=4000 --screenshot=<temp>/desktop.png <file or http URL>
    ```
 
-   The screenshot is one viewport of the given size, not the full page, so make the window tall enough to hold the content you need to see. Headless Chrome will not make a window narrower than about 500 px, so a 390 px screenshot is silently cropped from a wider layout. A piece that plays itself is caught at a random point of its loop: add `--force-prefers-reduced-motion` for the finished frame, and take one more screenshot without it to see a frame mid-loop. For the phone check, screenshot a small wrapper page that holds the site in an `<iframe>` 375 px wide. Elements revealed on scroll may not appear in headless screenshots; check in the source that their hidden starting state is applied by script (see `references/interaction.md`). With a real browser tool, also tab through every flow.
+   The image is one window of the given size, so make it tall enough for what you need to see. Chrome will not make a window narrower than about 500 px: for the phone, screenshot a small page that holds the site in an `<iframe>` 375 px wide. A looping piece is caught mid-loop; add `--force-prefers-reduced-motion` for its finished frame. Content revealed on scroll may be missing, so check in the source that its hidden state is set by script (see `references/interaction.md`).
 
-   Then measure the phone layout over the whole page, not only the part you looked at, and fix every `breach` (exit code 1) until it passes:
-
-   ```
-   python <skill-dir>/scripts/check_phone.py <page>.html
-   ```
-3. Measure the page rather than estimating it. Serve it over HTTP (for a static folder, `python -m http.server` in that folder), run Lighthouse in its default mobile profile, then read the report with the budget reader:
+4. **Lighthouse** in its default mobile profile, over HTTP (for a static folder, `python -m http.server` in it), read by the budget reader:
 
    ```
    npx lighthouse@13.6.0 <http URL> --output=json --output-path=<temp>/report.json --quiet --chrome-flags="--headless=new --user-data-dir=<temp>/lh-profile"
    python <skill-dir>/scripts/check_budgets.py <temp>/report.json --script-kib <the brief's budget>
    ```
 
-   It checks LCP (2.5 s), CLS (0.1), total blocking time (200 ms, the lab stand-in for INP), script weight against the brief, and lists every non-composited animation by element. Fix every `breach` (exit code 1). Exit code 2 means a figure is `unmeasured` or the report is unusable: rerun, and if it still fails, report the figure as unmeasured, never as passed. `http.server` does not compress, so script weight reads high, which errs on the safe side. Set `CHROME_PATH` if Lighthouse cannot find Chrome. If Node or the network is unavailable, say so in the report. Lighthouse does not measure the frame rate of the signature moment: record a performance trace with a browser tool if the session has one, and otherwise say it is unmeasured.
-4. Ask whether the first screen gives the eye something worth looking at, and run the fidelity checklist in `references/artefacts.md` on the hero piece. A page that is correct but forgettable has a timid signature: strengthen the signature rather than adding more elements.
-5. Hold the page against a reference. Pick one acclaimed site in the chosen direction, one a designer in the subject's field would admire (`references/exemplars.md` names some), screenshot its first screen at 1440 px with the command in item 2, and look at the two images side by side. Compare the hero piece's fidelity, the span between the largest type and the smallest detail, how much believable detail there is, and the light. Name the largest gap and close it, or say in the report why it stays. The reference sets the bar for craft, not the look: take nothing from its surface. If the site cannot be reached, say so in the report.
-6. Walk the checklist in `references/interaction.md` (states, focus, targets, forms, performance), and for a tool the one at the end of `references/app-screens.md`.
-7. Re-run the tell check in `references/slop-tells.md` against the built page, not the brief. It covers structural tells the checker cannot see, such as the centred badge hero, three identical cards and the whole-look clusters.
-8. Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
-9. Report the brief, what the critique changed, the largest gap against the reference, the measured figures against their budgets, and anything you could not verify (for example rendered contrast without a browser).
+   Fix every `breach` (exit code 1). Exit code 2 means a figure is `unmeasured`: rerun once, then report it as unmeasured, never as passed. Set `CHROME_PATH` if Lighthouse cannot find Chrome. Lighthouse does not measure the signature moment's frame rate; record a trace if a browser tool can, and otherwise report it as unmeasured.
+
+5. **Reference.** Screenshot the first screen of one acclaimed site in the chosen direction, one a designer in the subject's field would admire (`references/exemplars.md` names some), at 1440 px with the command in check 3, and look at it beside yours. Compare the hero piece's fidelity, the span from the largest type to the smallest detail, how much believable detail there is, and the light. Name the largest gap and close it, or say why it stays. Take the bar for craft from it, nothing from its surface.
+
+Then critique by eye:
+
+- Run the fidelity checklist in `references/artefacts.md` on the hero piece. If the first screen is correct but forgettable, strengthen the signature rather than adding elements.
+- Walk the checklist in `references/interaction.md`, and for a tool the one at the end of `references/app-screens.md`.
+- Re-run the tell check in `references/slop-tells.md` against the built page: it covers structural tells the scan cannot see, such as the centred badge hero, three identical cards and the whole-look clusters.
+- Remove anything that does not serve the subject or the user: decorative dividers, labels above self-explanatory content, badges, glows, icons that repeat their text, a second accent colour. Deleting is usually the biggest improvement available.
+
+Report the brief, what the critique changed, and these lines:
+
+```
+Static scan:  defects left, and each tell kept with its reason
+Phone:        pass, or the overflow left and why
+Screenshots:  the widths and colour schemes looked at
+Lighthouse:   LCP, CLS, total blocking time and script KiB against budget, or what stopped it
+Reference:    the site, the largest gap and what was done about it
+Placeholders: each fact left for the user to supply
+Unverified:   anything else not checked, such as rendered contrast without a browser
+```
 
 ## Build sheet
 
