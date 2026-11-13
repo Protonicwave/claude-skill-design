@@ -85,8 +85,8 @@ results.md      written by score.py
 ```
 
 1. Copy each arm's instructions into `arms/`: a skill's whole folder, so its references resolve inside the copy. An arm with no instructions has no folder.
-2. Build each page with one subagent per build, on the same model for every arm, using the brief below. A build whose reply names a skill or file of another arm is discarded and rebuilt once.
-3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`. An arm whose instructions have not changed since an earlier round need not be rebuilt: capture its builds from that round's `builds/` into this round's `captures/`, so every build in the round is measured by the same capture.
+2. Build each page with one subagent per build, on the same model for every arm, using the brief below. A build whose reply names a skill or file of another arm is discarded and rebuilt once. Save the output of `git status --porcelain --untracked-files=all` before the first builder starts and run it again when the last has replied: a builder caused each new line, so remove the file it names or restore it with `git restore`. The check cannot see `bench/runs/`, which git ignores.
+3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`. Start only when every builder, rebuilds included, has replied: builders start and stop their own servers and browsers, and a capture stopped from outside ends with an empty log. An arm whose instructions have not changed since an earlier round need not be rebuilt: capture its builds from that round's `builds/` into this round's `captures/`, so every build in the round is measured by the same capture.
 4. Write `manifest.json`, with paths relative to the round folder:
 
    ```json
@@ -107,9 +107,9 @@ Goal: bench/runs/<round>/builds/<id>/index.html is a finished page for the subje
 Task type: ui-build
 Skill: none
 Read: bench/runs/<round>/arms/<arm>/SKILL.md, and follow it as your instructions, resolving its relative paths inside that folder. (Bare arm: nothing.)
-Change: create files in bench/runs/<round>/builds/<id>/ only.
+Change: create files in bench/runs/<round>/builds/<id>/ and your scratch folder (below) only, writing each by its absolute path, since each shell starts in the repository root.
 Done when: the folder holds index.html, the page opens without console errors, and your reply names every skill or file you read.
-Constraints: Do not use the Skill tool. Read any file in your arm's folder and no other file in the repository, and no other build. Keep scratch files in a folder named <id> inside your scratchpad, since other builders share it.
+Constraints: Do not use the Skill tool. Of the files in this repository, read only those in your arm's folder and your build folder, and do not list other builds. Public websites are open, but not another builder's local server. Keep scratch files in a folder named <id> inside your scratchpad, since other builders share it. Stop only processes you started, never by name (taskkill /IM, Stop-Process -Name, pkill, killall), since other builders run on this machine, and stop all of them before you reply.
 Ruled out: nothing.
 
 <subject prompt>
