@@ -108,9 +108,9 @@ Treat the first build as a draft. Run all five checks, fix what they find, and g
    chrome --headless=new --hide-scrollbars --user-data-dir=<temp>/profile --window-size=1440,2600 --virtual-time-budget=4000 --screenshot=<temp>/desktop.png <file or http URL>
    ```
 
-   The image is one window of the given size, so make it tall enough for what you need to see. Chrome will not make a window narrower than about 500 px: for the phone, screenshot a small page that holds the site in an `<iframe>` 375 px wide. A looping piece is caught mid-loop; add `--force-prefers-reduced-motion` for its finished frame. Content revealed on scroll may be missing, so check in the source that its hidden state is set by script (see `references/interaction.md`).
+   The image is one window of the given size, so make it tall enough for what you need to see. Chrome will not make a window narrower than about 500 px: for the phone, screenshot a small page, written to the same temporary folder, that holds the site in an `<iframe>` 375 px wide. A looping piece is caught mid-loop; add `--force-prefers-reduced-motion` for its finished frame. Content revealed on scroll may be missing, so check in the source that its hidden state is set by script (see `references/interaction.md`).
 
-4. **Lighthouse** in its default mobile profile, over HTTP (for a static folder, `python -m http.server` in it), read by the budget reader:
+4. **Lighthouse** in its default mobile profile, over HTTP (for a static folder, `python -m http.server` in it, stopped afterwards by its process id, since stopping Python by name ends every Python process on the machine), read by the budget reader:
 
    ```
    npx lighthouse@13.6.0 <http URL> --output=json --output-path=<temp>/report.json --quiet --chrome-flags="--headless=new --user-data-dir=<temp>/lh-profile"
