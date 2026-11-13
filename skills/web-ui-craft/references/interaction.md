@@ -191,6 +191,7 @@ CSS scroll-driven animations drive a keyframe animation from scroll position ins
 ```css
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
+    @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
     .scene-step {
       animation: rise linear both;
       animation-timeline: view();         /* after the shorthand, which resets it */
