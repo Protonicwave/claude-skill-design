@@ -19,9 +19,9 @@ not widen to show it. With --lighthouse a mobile
 Lighthouse report is written and judged by the skill's check_budgets.py.
 
 Exit code 2 means no function.json was written: BUILD has no index.html,
-Chrome could not be started, or a step of the capture failed, such as a
-screenshot of a page whose script never yields or any step after the
-Playwright driver process has stopped. Each browser step waits at most
+Chrome could not be started, the Playwright driver process stopped, or a step
+of the capture failed, such as a screenshot of a page whose script never
+yields. Each browser step waits at most
 30 s. A function.json from an earlier capture is removed first, so OUT never
 holds one that describes another build. Otherwise the exit code is 0 and the
 elapsed capture time is printed beside its budget.
@@ -101,8 +101,8 @@ LIGHTHOUSE_TIMEOUT_SECONDS = 180.0
 CHECK_BUDGETS_TIMEOUT_SECONDS = 60.0
 TASKKILL_TIMEOUT_SECONDS = 10.0
 
-# Once its driver process has stopped, Playwright raises a bare Exception with
-# this text from every call, not its own Error.
+# The first call after Playwright's driver process stops raises a bare Exception
+# with this text, not Playwright's own Error; later calls raise its TargetClosedError.
 DRIVER_STOPPED_MESSAGE = "Connection closed while reading from the driver"
 
 LIGHTHOUSE_PACKAGE = "lighthouse@13.6.0"
@@ -569,17 +569,8 @@ def _stop_tree(process: subprocess.Popen[bytes]) -> None:
     process.wait()
 
 
-def _driver_stopped(error: Exception) -> bool:
-    return DRIVER_STOPPED_MESSAGE in str(error)
-
-
-def _close(browser: Browser) -> None:
-    try:
-        browser.close()
-    except Exception as error:
-        # A stopped driver has taken Chrome with it, so there is nothing left to close.
-        if not _driver_stopped(error):
-            raise
+def _is_browser_failure(error: Exception) -> bool:
+    return isinstance(error, PlaywrightError) or DRIVER_STOPPED_MESSAGE in str(error)
 
 
 def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float) -> FunctionReport:
@@ -636,18 +627,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     with serve_folder(args.build) as url, sync_playwright() as playwright:
         try:
             browser = playwright.chromium.launch(channel="chrome")
-        except PlaywrightError as error:
-            print(f"Chrome could not be started: {error.message}", file=sys.stderr)
+        except Exception as error:
+            if not _is_browser_failure(error):
+                raise
+            print(f"Chrome could not be started: {error}", file=sys.stderr)
             return 2
         try:
             report = capture_build(browser, url, args.out, args.load_timeout * 1000)
         except Exception as error:
-            if not (isinstance(error, PlaywrightError) or _driver_stopped(error)):
+            if not _is_browser_failure(error):
                 raise
             print(f"capture of {args.build} failed: {error}", file=sys.stderr)
             return 2
-        finally:
-            _close(browser)
+        # Only a capture that succeeded closes Chrome here. After a failure the
+        # driver may be gone, and leaving sync_playwright stops it with Chrome.
+        browser.close()
         if args.lighthouse:
             report = replace(report, budgets=run_lighthouse(url, args.out))
     (args.out / "function.json").write_text(
