@@ -41,7 +41,8 @@ Motion:       the tier (product or brand), the signature moment, its lead elemen
               moves and for how long, and what deliberately does not
 Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
 Copy:         the headline and primary action, written for this audience; the action's name,
-              kept from button to confirmation
+              kept from button to confirmation; each fact the page needs that was not supplied,
+              and how the copy handles it
 Budget:       compressed script for the whole page and the share the spectacle layer may take
               (365 KiB in total by default; 75 KiB for a page with no spectacle)
 ```
@@ -57,6 +58,7 @@ Rules for the brief:
 - **Compare layouts before choosing one.** Sketch two or three genuinely different first screens (not one layout with the image moved) and pick by the subject's primary job. The first layout that comes to mind is usually the template.
 - **Claim, proof, action.** Most pages need one clear statement, one piece of real evidence (product view, live number, customer, demo) and one primary action. Structure follows content, not a template.
 - **One name per action.** The button that says "Publish" produces a confirmation that says "Published", not "Saved". The interface's vocabulary is how people find their way around it.
+- **Only facts you were given.** Every fact a visitor could act on or repeat (a date, time, place, price, count, version, command, option, default, licence, rule or named person) comes from the subject, the user or the repository. When the page wants one that was not supplied, write the line so it does not need it, or show a visible placeholder in square brackets, such as `[start date]`, and list each one in the report. A plausible invented fact misleads the visitor, and someone else has to find it and take it out. A mock-up may invent the records it displays (names, identifiers, figures), but not the product's own commands, options, prices or limits, which a visitor would copy or rely on.
 
 Read `references/exemplars.md` when choosing a direction or signature, `references/visual-system.md` when setting palette, type, layout and depth, and the motion section of `references/interaction.md` when writing the Motion line.
 
