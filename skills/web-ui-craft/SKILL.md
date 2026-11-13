@@ -61,7 +61,7 @@ Rules for the brief:
 - **Only facts you were given.** Every fact a visitor could act on or repeat (a date, time, place, price, count, version, command, option, default, licence, rule or named person) comes from the subject, the user or the repository. A plausible invented fact misleads the visitor, and someone else has to find it and take it out. A visible gap costs too: a page that shows brackets reads as unfinished. So when the page wants a fact nobody supplied:
   - **Write around it first.** Most lines that seem to need a date, price or rule work without one: "every other Thursday, spring to autumn" rather than a list of dates the subject never gave. A section with nothing true left to say is cut, not padded.
   - **Never leave the primary action blank.** When it needs a value nobody supplied, such as the identifier an install or download takes, use the one the subject makes obvious (the product's own name) and list it in the report as an assumption to confirm.
-  - **Otherwise mark the gap.** A fact the page cannot do without becomes a placeholder in square brackets, such as `[start date]`, kept off the first screen and out of the closing section, and listed in the report.
+  - **Otherwise mark the gap.** A fact the page cannot do without becomes a placeholder in square brackets, such as `[start date]`, kept off the first screen, away from the primary action and the controls that serve it, out of the closing section, and listed in the report.
 
   A mock-up may invent the records it displays (names, identifiers, figures), but not the product's own commands, options, prices or limits, which a visitor would copy or rely on.
 

@@ -371,7 +371,7 @@ Run this on the built page, not on the plan.
 - [ ] Hover, active, focus-visible, disabled, loading, empty and error states exist and look designed.
 - [ ] Each action keeps one name from its button to its confirmation.
 - [ ] No success, confirmation or error message is visible before the action that produces it.
-- [ ] Every date, place, price, count, version, command and rule on the page was supplied; the rest are written around, or shown as placeholders that stay off the first screen, the primary action and the closing section, and listed in the report.
+- [ ] Every date, place, price, count, version, command and rule on the page was supplied, or is a value the subject makes obvious and the report lists as an assumption; the rest are written around, or shown as placeholders that stay off the first screen, away from the primary action and its controls, and out of the closing section, and listed in the report.
 - [ ] Forms: labels, types, autocomplete, 16 px inputs, errors beside fields, paste allowed.
 - [ ] Targets at least 24 px, 44 px on touch.
 
