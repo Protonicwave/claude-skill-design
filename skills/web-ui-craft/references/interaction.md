@@ -103,7 +103,7 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 - **One lead.** One element moves first and furthest and carries the eye to where it should land. Everything else follows it and moves less.
 - **Overlap, do not queue.** Followers start 40 to 80 ms apart, each before the previous one has finished. Steps that wait for each other read as slow.
 - **One curve, durations by distance.** Elements that travel further take longer; small ones are quicker. Mixing curve families looks accidental.
-- **Readable fast.** A page-load sequence is over in about 1 s and at rest by 1.5 s at the latest, and the headline is legible within the first 300 ms. Every piece of the first screen is present and readable in the first frame; the entrance moves things into place, it does not build them up. A chart still drawing its axes or a table still filling its rows after 1.5 s reads as loading, not as design. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
+- **Readable fast.** A page-load sequence is over in about 1 s and at rest by 1.5 s at the latest, and the headline is legible within the first 300 ms. A looping signature piece is not part of that sequence: it opens complete and keeps changing one part at a time (`artefacts.md`). Every piece of the first screen is present and readable in the first frame; the entrance moves things into place, it does not build them up. A chart still drawing its axes or a table still filling its rows after 1.5 s reads as loading, not as design. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
 - **The last frame is the design.** Compose the final frame first, then the route to it. Award jurors judge whether static frames look intentional without motion, and reduced-motion users see only that frame.
 - **Once.** An entrance does not replay when the reader scrolls back or follows an anchor.
 - **The hero piece can carry it.** On the product tier the signature moment is usually the piece playing itself, built as `artefacts.md` describes; the choreography rules above apply to each step of its loop.
@@ -378,7 +378,7 @@ Run this on the built page, not on the plan.
 **Motion**
 - [ ] The page moves like its tier: no scroll choreography on the product tier; product-tier rules everywhere outside the brand tier's scene.
 - [ ] The signature movement is one the subject makes, not a fade applied to every block.
-- [ ] The first screen is complete and readable in its first frame and at rest by 1.5 s, with nothing faded in from opacity 0; a looping piece opens on a finished frame and makes its first change within about 1 s.
+- [ ] The first screen is complete and readable in its first frame and its entrance is at rest by 1.5 s, with nothing faded in from opacity 0; a looping signature piece, the one thing that keeps moving, opens on a finished frame and makes its first change within about 1 s.
 - [ ] The signature moment has one lead, overlapping followers and a last frame that looks finished on its own.
 - [ ] Elements that change place between states travel there instead of cutting.
 - [ ] Scroll-linked and pointer motion sit behind `@supports` and `prefers-reduced-motion: no-preference`, and the page reads correctly without them.
