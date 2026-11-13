@@ -45,6 +45,13 @@ Text in a box that scrolls is reachable, so it is never clipped; text in a box
 Text wholly past an edge, such as a skip link or a closed drawer parked off
 screen, is placed there on purpose and is not clipped either. Clipping is
 judged across the width only.
+
+Not handled by the clipped-text check: text inside shadow roots and iframes,
+which the walk does not enter; text sliding through a clipping box, such as a
+ticker or carousel, which is judged at whatever frame the check lands on; and
+a scroll box that an outer clipping box cuts, whose text counts as reachable.
+Text hidden by clip-path in a box larger than 1 px, such as a padded skip link,
+is reported as clipped although no one sees it.
 """
 
 from __future__ import annotations

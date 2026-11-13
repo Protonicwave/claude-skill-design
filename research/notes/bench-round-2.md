@@ -50,7 +50,7 @@ Function checks regressed slightly on the dashboards and the profiler pages.
 ### Findings
 - Serious axe violations: web-ui-craft 1 of 8 builds (0 in round one). Dashboard run 1 nests controls inside a job-card button (`nested-interactive`) and has two scroll boxes the keyboard cannot reach (`scrollable-region-focusable`).
 - Focus stops with no visible focus: web-ui-craft 2 builds (1 in round one): an input on charity run 1 and one stop on dashboard run 1.
-- Clipped text at 375 px: both profiler builds truncate test names in their report rows, 9 elements each. Profiler run 2 also reports its skip link, which is hidden with the standard 1 px `clip-path: inset(50%)` pattern. That one is a bench false positive.
+- Clipped text at 375 px: both profiler builds truncate test names in their report rows, 9 elements each. Profiler run 2 also reports its skip link, which is hidden with `clip-path: inset(50%)` in a 1 px box that a later rule pads to well over 1 px, so the bench's 1 px exemption does not apply. No one sees the link, so it is a bench false positive.
 - No phone overflow, console errors or failed requests in any web-ui-craft build. Captures took 18.2 to 22.9 s against the 90 s budget.
 
 ## 5. Method and its limits
