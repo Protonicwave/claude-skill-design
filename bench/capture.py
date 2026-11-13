@@ -121,12 +121,13 @@ const label = (el) => {
 # {same: true} when focus moved within the element of the last stop. Otherwise
 # returns whether the stop was reached before, a short label, its box, and
 # whether a fixed or sticky element lies over its centre.
-FOCUSED_STOP_JS = f"""
-() => {{
-  {ELEMENT_LABEL_JS}
+FOCUSED_STOP_JS = (
+    "() => {"
+    + ELEMENT_LABEL_JS
+    + """
   const el = document.activeElement;
   if (!el || el === document.body || el === document.documentElement) return null;
-  if (el === window.__benchLastStop) return {{same: true}};
+  if (el === window.__benchLastStop) return {same: true};
   window.__benchLastStop = el;
   const seen = (window.__benchStops ??= []);
   const repeat = seen.includes(el);
@@ -134,46 +135,48 @@ FOCUSED_STOP_JS = f"""
   const r = el.getBoundingClientRect();
   const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
   let covered = false;
-  if (top && !el.contains(top) && !top.contains(el)) {{
-    for (let n = top; n; n = n.parentElement) {{
+  if (top && !el.contains(top) && !top.contains(el)) {
+    for (let n = top; n; n = n.parentElement) {
       const position = getComputedStyle(n).position;
-      if (position === 'fixed' || position === 'sticky') {{ covered = true; break; }}
-    }}
-  }}
-  return {{same: false, repeat, label: label(el), covered,
-          box: {{x: r.left, y: r.top, width: r.width, height: r.height}}}};
-}}
+      if (position === 'fixed' || position === 'sticky') { covered = true; break; }
+    }
+  }
+  return {same: false, repeat, label: label(el), covered,
+          box: {x: r.left, y: r.top, width: r.width, height: r.height}};
+}
 """
+)
 
 # Takes [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED] and returns the labels of the
 # elements holding text cut by the edge of a clipping ancestor or the screen's
 # edge, and whether the walk reached the end of the text or a limit. The walk
 # up stops at body: overflow set there clips at the screen's edge, which the
 # last check covers.
-CLIPPED_TEXT_JS = f"""
-([maxNodes, maxReported]) => {{
-  {ELEMENT_LABEL_JS}
+CLIPPED_TEXT_JS = (
+    "([maxNodes, maxReported]) => {"
+    + ELEMENT_LABEL_JS
+    + """
   const root = document.documentElement;
   const layoutIsWider = root.scrollWidth > root.clientWidth;
   const cut = (r, left, right) =>
     (r.left < right && r.right > right + 1) || (r.right > left && r.left < left - 1);
-  const isClipped = (el, r) => {{
-    for (let box = el; box && box !== document.body; box = box.parentElement) {{
+  const isClipped = (el, r) => {
+    for (let box = el; box && box !== document.body; box = box.parentElement) {
       const overflow = getComputedStyle(box).overflowX;
       if (overflow === 'auto' || overflow === 'scroll') return false;
       if (overflow !== 'hidden' && overflow !== 'clip') continue;
       const b = box.getBoundingClientRect();
       if (b.width <= 1 || b.height <= 1) return false;
       if (cut(r, b.left, b.right)) return true;
-    }}
+    }
     return !layoutIsWider && cut(r, 0, root.clientWidth);
-  }};
+  };
   const clipped = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let endedBy = 'limit';
-  for (let n = 0; n < maxNodes && clipped.size < maxReported; n++) {{
+  for (let n = 0; n < maxNodes && clipped.size < maxReported; n++) {
     const node = walker.nextNode();
-    if (!node) {{ endedBy = 'end'; break; }}
+    if (!node) { endedBy = 'end'; break; }
     const el = node.parentElement;
     if (!el || clipped.has(el) || !node.textContent.trim()) continue;
     if (getComputedStyle(el).visibility !== 'visible') continue;
@@ -181,10 +184,11 @@ CLIPPED_TEXT_JS = f"""
     range.selectNodeContents(node);
     const rects = [...range.getClientRects()].filter((r) => r.width > 0);
     if (rects.some((r) => isClipped(el, r))) clipped.add(el);
-  }}
-  return {{labels: [...clipped].map(label), ended_by: endedBy}};
-}}
+  }
+  return {labels: [...clipped].map(label), ended_by: endedBy};
+}
 """
+)
 
 HEAD_TAGS_JS = """
 () => ({
