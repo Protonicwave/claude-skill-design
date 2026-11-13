@@ -10,6 +10,7 @@ dev = [
     "axe-playwright-python==0.1.8",
     "coverage==7.17.0",
     "mypy==2.3.0",
+    "pillow==13.0.0",
     "playwright==1.64.1",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
@@ -31,7 +32,7 @@ line-length = 100
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S", "PT", "N", "C90", "PLR"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["capture", "check_budgets", "check_slop", "pairs", "score", "views"]
+known-first-party = ["capture", "check_budgets", "check_phone", "check_slop", "pairs", "score", "views"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

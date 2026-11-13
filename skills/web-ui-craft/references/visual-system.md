@@ -122,10 +122,12 @@ A variable family with width or optical-size axes can carry both display and tex
 - Body 16 to 20 px. Line height 1.4 to 1.6 for body (120 to 145% in print terms); headings 1.0 to 1.2. Line height falls as size rises.
 - Measure 45 to 90 characters; aim for about 65. Use `max-width: 65ch` on prose.
 - Tracking tightens with size. Inter's published curve gives about -0.011em at 16 px and about -0.022em from 32 px up; most grotesks behave similarly. Never add negative tracking to small text.
+- Condensed and compressed faces take no negative tracking. Their letters already sit close, so tightening them closes the word spaces until a line reads as one word. Set them at 0 or slightly positive, and at display size check that each word space is clearly wider than the gaps between letters.
 - All caps only for short labels, with 0.05em to 0.12em letter-spacing. Bold and italic never together.
 - `text-wrap: balance` on headings and `text-wrap: pretty` on paragraphs. Browsers without support set ordinary wrapping, so both are safe to add.
 - `font-variant-numeric: tabular-nums` wherever numbers are compared (tables, prices, counters, timers).
-- Curly quotes, a real ellipsis character, and non-breaking spaces between numbers and units.
+- Curly quotes and a real ellipsis character.
+- A figure never breaks from what it belongs to. Join a number to its unit, and the parts of a date, time, duration or price, with non-breaking spaces (`14&nbsp;July`, `2&nbsp;h&nbsp;05&nbsp;min`, `9.30&nbsp;am`), or wrap the group in a span with `white-space: nowrap`. Keep each group short enough to fit a phone line.
 - Hierarchy from size and weight steps first, colour second. Big jumps read as confident: a hero at 3x the body size or more is normal on marketing pages.
 
 ### Fluid type scale

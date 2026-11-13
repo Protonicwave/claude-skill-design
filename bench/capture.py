@@ -12,7 +12,10 @@ the full page after a scroll pass, and the first screen with reduced motion.
 OUT also receives function.json: axe violations, a keyboard walk recording for
 each tab stop whether focus is visible and whether a fixed or sticky element
 covers it, horizontal overflow at the phone width, console errors, failed
-requests, head tags, and loads that hit the timeout. With --lighthouse a mobile
+requests, head tags, and loads that hit the timeout. It also lists, by element,
+text the reader cannot reach at the phone width: text cut by the edge of a box
+whose overflow is hidden or clipped, or by the screen's edge when the layout does
+not widen to show it. With --lighthouse a mobile
 Lighthouse report is written and judged by the skill's check_budgets.py.
 
 Exit code 2 means no function.json was written: BUILD has no index.html,
@@ -23,16 +26,32 @@ holds one that describes another build. Otherwise the exit code is 0 and the
 elapsed capture time is printed beside its budget.
 
 Limits: the keyboard walk stops after 200 presses of Tab, the scroll pass after
-60 viewport heights, Lighthouse after 180 s with every process it started, and
-the budget check after 60 s. A budget check that overruns or crashes is
-recorded as unmeasured, never as a breach.
+60 viewport heights, the clipped-text check after 5,000 text nodes or 20
+elements reported (recorded as ended_by "limit", as the walk's is), Lighthouse
+after 180 s with every process it started, and the budget check after 60 s. A
+budget check that overruns or crashes is recorded as unmeasured, never as a
+breach.
 
 A date input, a shadow root or an iframe is one tab stop however many presses
 of Tab cross it, since the document's active element stays the same, so focus
 inside it is not judged separately. A focus indicator is judged visible when
 any pixel around the element changes, so a moving video or canvas behind it
 reads as visible. Overflow counts only content that widens the layout: content
-clipped by overflow: hidden on html or body reads as 0 px.
+clipped by overflow: hidden on both html and body reads as 0 px, and is
+reported as clipped text instead; on either alone the layout still widens.
+
+Text in a box that scrolls is reachable, so it is never clipped; text in a box
+1 px or smaller is visually hidden for screen readers, so it is not either.
+Text wholly past an edge, such as a skip link or a closed drawer parked off
+screen, is placed there on purpose and is not clipped either. Clipping is
+judged across the width only.
+
+Not handled by the clipped-text check: text inside shadow roots and iframes,
+which the walk does not enter; text sliding through a clipping box, such as a
+ticker or carousel, which is judged at whatever frame the check lands on; and
+a scroll box that an outer clipping box cuts, whose text counts as reachable.
+Text hidden by clip-path in a box larger than 1 px, such as a padded skip link,
+is reported as clipped although no one sees it.
 """
 
 from __future__ import annotations
@@ -71,6 +90,8 @@ DEFAULT_LOAD_TIMEOUT_SECONDS = 30.0
 ACTION_TIMEOUT_SECONDS = 30.0
 MAX_TAB_STOPS = 200
 MAX_SCROLL_STEPS = 60
+MAX_TEXT_NODES = 5000
+MAX_CLIPPED_REPORTED = 20
 SCROLL_STEP_PAUSE_MS = 120
 SCROLL_SETTLE_MS = 600
 FOCUS_RING_MARGIN_PX = 8
@@ -95,12 +116,22 @@ SETTLED_FOCUS_CSS = (
     "*, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }"
 )
 
+# Defines label(el): the element's tag, id and first 40 characters of its text.
+ELEMENT_LABEL_JS = """
+const label = (el) => {
+  const text = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
+  return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (text ? ' "' + text + '"' : '');
+};
+"""
+
 # Returns null when focus has left the page's elements (it sits on body), and
 # {same: true} when focus moved within the element of the last stop. Otherwise
 # returns whether the stop was reached before, a short label, its box, and
 # whether a fixed or sticky element lies over its centre.
-FOCUSED_STOP_JS = """
-() => {
+FOCUSED_STOP_JS = (
+    "() => {"
+    + ELEMENT_LABEL_JS
+    + """
   const el = document.activeElement;
   if (!el || el === document.body || el === document.documentElement) return null;
   if (el === window.__benchLastStop) return {same: true};
@@ -109,9 +140,6 @@ FOCUSED_STOP_JS = """
   const repeat = seen.includes(el);
   if (!repeat) seen.push(el);
   const r = el.getBoundingClientRect();
-  const text = (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40);
-  const label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '')
-    + (text ? ' "' + text + '"' : '');
   const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
   let covered = false;
   if (top && !el.contains(top) && !top.contains(el)) {
@@ -120,10 +148,54 @@ FOCUSED_STOP_JS = """
       if (position === 'fixed' || position === 'sticky') { covered = true; break; }
     }
   }
-  return {same: false, repeat, label, covered,
+  return {same: false, repeat, label: label(el), covered,
           box: {x: r.left, y: r.top, width: r.width, height: r.height}};
 }
 """
+)
+
+# Takes [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED] and returns the labels of the
+# elements holding text cut by the edge of a clipping ancestor or the screen's
+# edge, and whether the walk reached the end of the text or a limit. The walk
+# up stops at body: overflow set there clips at the screen's edge, which the
+# last check covers.
+CLIPPED_TEXT_JS = (
+    "([maxNodes, maxReported]) => {"
+    + ELEMENT_LABEL_JS
+    + """
+  const root = document.documentElement;
+  const layoutIsWider = root.scrollWidth > root.clientWidth;
+  const cut = (r, left, right) =>
+    (r.left < right && r.right > right + 1) || (r.right > left && r.left < left - 1);
+  const isClipped = (el, r) => {
+    for (let box = el; box && box !== document.body; box = box.parentElement) {
+      const overflow = getComputedStyle(box).overflowX;
+      if (overflow === 'auto' || overflow === 'scroll') return false;
+      if (overflow !== 'hidden' && overflow !== 'clip') continue;
+      const b = box.getBoundingClientRect();
+      if (b.width <= 1 || b.height <= 1) return false;
+      if (cut(r, b.left, b.right)) return true;
+    }
+    return !layoutIsWider && cut(r, 0, root.clientWidth);
+  };
+  const clipped = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let endedBy = 'limit';
+  for (let n = 0; n < maxNodes && clipped.size < maxReported; n++) {
+    const node = walker.nextNode();
+    if (!node) { endedBy = 'end'; break; }
+    const el = node.parentElement;
+    if (!el || clipped.has(el) || !node.textContent.trim()) continue;
+    if (getComputedStyle(el).visibility !== 'visible') continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+    if (rects.some((r) => isClipped(el, r))) clipped.add(el);
+  }
+  return {labels: [...clipped].map(label), ended_by: endedBy};
+}
+"""
+)
 
 HEAD_TAGS_JS = """
 () => ({
@@ -137,8 +209,8 @@ HEAD_TAGS_JS = """
 
 # The layout width, not innerWidth: mobile Chrome zooms out to fit content
 # wider than the screen, which widens innerWidth to match it. Content clipped
-# by overflow: hidden on html or body does not widen the layout, so it reads
-# as 0 px although the reader cannot reach it.
+# by overflow: hidden on both html and body does not widen the layout, so it
+# reads as 0 px although the reader cannot reach it.
 OVERFLOW_JS = "() => document.documentElement.scrollWidth - document.documentElement.clientWidth"
 
 
@@ -207,6 +279,8 @@ class FunctionReport:
     axe_violations: list[Violation]
     keyboard_walk: KeyboardWalk
     phone_overflow_px: int
+    phone_clipped_text: list[str]
+    phone_clipped_text_ended_by: str
     head: HeadTags
     console_errors: list[str]
     failed_requests: list[str]
@@ -242,7 +316,7 @@ class CaptureRun:
     browser: Browser
     url: str
     out: Path
-    timeout_ms: float
+    load_timeout_ms: float
     events: PageEvents
 
 
@@ -284,13 +358,16 @@ def _open(run: CaptureRun, viewport: Viewport, *, reduced: bool) -> tuple[Page, 
     context.set_default_timeout(ACTION_TIMEOUT_SECONDS * 1000)
     page = context.new_page()
     _watch(page, run)
-    page.goto(run.url, wait_until="commit", timeout=run.timeout_ms)
+    # Bounded by the action timeout, not the load timeout: a commit slower than
+    # a short load timeout would otherwise fail the capture instead of being
+    # recorded as a load that timed out.
+    page.goto(run.url, wait_until="commit")
     return page, time.monotonic()
 
 
 def _finish_loading(run: CaptureRun, page: Page, load_name: str) -> None:
     try:
-        page.wait_for_load_state("load", timeout=run.timeout_ms)
+        page.wait_for_load_state("load", timeout=run.load_timeout_ms)
     except PlaywrightTimeoutError:
         run.events.timed_out_loads.append(load_name)
 
@@ -487,12 +564,13 @@ def _stop_tree(process: subprocess.Popen[bytes]) -> None:
     process.wait()
 
 
-def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> FunctionReport:
+def capture_build(browser: Browser, url: str, out: Path, load_timeout_ms: float) -> FunctionReport:
     started = time.monotonic()
-    run = CaptureRun(browser, url, out, timeout_ms, PageEvents())
+    run = CaptureRun(browser, url, out, load_timeout_ms, PageEvents())
     desktop, taken_at = shoot_viewport(run, DESKTOP)
     phone, phone_taken_at = shoot_viewport(run, PHONE)
     overflow_px = int(phone.evaluate(OVERFLOW_JS))
+    clipped = phone.evaluate(CLIPPED_TEXT_JS, [MAX_TEXT_NODES, MAX_CLIPPED_REPORTED])
     phone.context.close()
     head = read_head(desktop)
     violations = run_axe(desktop)
@@ -505,6 +583,8 @@ def capture_build(browser: Browser, url: str, out: Path, timeout_ms: float) -> F
         axe_violations=violations,
         keyboard_walk=walk,
         phone_overflow_px=max(overflow_px, 0),
+        phone_clipped_text=[str(label) for label in clipped["labels"]],
+        phone_clipped_text_ended_by=str(clipped["ended_by"]),
         head=head,
         console_errors=sorted(run.events.console_errors),
         failed_requests=sorted(run.events.failed_requests),

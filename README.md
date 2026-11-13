@@ -14,6 +14,7 @@ Most of the effort goes into one hero piece built in code to a fidelity checklis
 - `skills/web-ui-craft/references/`: detail loaded on demand.
 - `skills/web-ui-craft/scripts/check_slop.py`: static scan for craft defects and generic tells.
 - `skills/web-ui-craft/scripts/check_budgets.py`: compares a Lighthouse report with the page budgets.
+- `skills/web-ui-craft/scripts/check_phone.py`: measures how far a page runs past a 375 px screen and checks its viewport tag, from headless Chrome.
 - `bench/capture.py`: captures a built page for the design bench and checks how it functions.
 - `bench/pairs.py` and `bench/score.py`: pair a bench round's builds blindly for judging and voting, then score the verdicts and votes against `bench/rubric.md`.
 - `research/`: the report and notes every rule is drawn from, with sources. `research/notes/premium-benchmark.md` records two test pages built with the skill before and after its premium revision.
@@ -67,7 +68,7 @@ The bench compares pages built with and without the skill. Capture one build, a 
 uv run python bench/capture.py path/to/build path/to/out
 ```
 
-`out` receives desktop (1440 by 900) and phone (375 by 812) screenshots: the first screen, frames at 0.25, 0.75, 1.5 and 3 s after navigation, three scroll depths, the full page and the first screen with reduced motion. It also receives `function.json`, recording axe violations, a keyboard walk, phone overflow, console errors, failed requests and head tags. `--lighthouse` adds a mobile Lighthouse run judged by `check_budgets.py`. The script prints its elapsed time beside the 90 s budget for one capture without Lighthouse.
+`out` receives desktop (1440 by 900) and phone (375 by 812) screenshots: the first screen, frames at 0.25, 0.75, 1.5 and 3 s after navigation, three scroll depths, the full page and the first screen with reduced motion. It also receives `function.json`, recording axe violations, a keyboard walk, phone overflow, text clipped at the phone width, console errors, failed requests and head tags. `--lighthouse` adds a mobile Lighthouse run judged by `check_budgets.py`. The script prints its elapsed time beside the 90 s budget for one capture without Lighthouse.
 
 ### Running a round
 
@@ -85,7 +86,7 @@ results.md      written by score.py
 
 1. Copy each arm's instructions into `arms/`: a skill's whole folder, so its references resolve inside the copy. An arm with no instructions has no folder.
 2. Build each page with one subagent per build, on the same model for every arm, using the brief below. A build whose reply names a skill or file of another arm is discarded and rebuilt once.
-3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`.
+3. Capture each build: `uv run python bench/capture.py bench/runs/<round>/builds/<id> bench/runs/<round>/captures/<id>`. An arm whose instructions have not changed since an earlier round need not be rebuilt: capture its builds from that round's `builds/` into this round's `captures/`, so every build in the round is measured by the same capture.
 4. Write `manifest.json`, with paths relative to the round folder:
 
    ```json
@@ -94,7 +95,7 @@ results.md      written by score.py
     "builds": [{"subject": "profiler", "arm": "bare", "run": 1, "capture": "captures/profiler-bare-1"}]}
    ```
 
-5. Pair: `uv run python bench/pairs.py bench/runs/<round>`. It pairs run i of each arm with run i of every other arm within a subject, copies each build's judged images under a random token, and writes a judge brief per pair and order. `--votes N` sets how many pairs go on the vote page (default 10). It refuses a round that already has `key.json`, since re-pairing would orphan its verdicts.
+5. Pair: `uv run python bench/pairs.py bench/runs/<round>`. It pairs run i of each arm with run i of every other arm within a subject, copies each build's judged images under a random token, and writes a judge brief per pair and order. A phone whole-page image taller than 2,600 px reaches judges as tiles of that height, since a taller image is shrunk before they see it. `--votes N` sets how many pairs go on the vote page (default 10). It refuses a round that already has `key.json`, since re-pairing would orphan its verdicts.
 6. Judge: give each file in `briefs/` verbatim as the prompt of one fresh subagent. Each writes `verdicts/<pair>-<order>.json`. Judges see the subject and images only, never code, arm names or builder briefs.
 7. Vote: open `vote.html`, choose a page or a tie for each pair, export, and save `votes.json` in the round folder.
 8. Score: `uv run python bench/score.py bench/runs/<round>` writes `results.md`: judge tallies per arm pair and criterion, where a choice counts only when both orders agree; agreement between judges and votes; and each build's function checks.

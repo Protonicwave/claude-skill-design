@@ -50,6 +50,8 @@ class FunctionSummary:
     covered_focus: int
     walk_end: str
     overflow_px: int
+    clipped_text: int
+    clipped_text_complete: bool
     console_errors: int
     failed_requests: int
     missing_head: tuple[str, ...]
@@ -64,6 +66,7 @@ PROBLEMS: tuple[tuple[str, Callable[[FunctionSummary], bool]], ...] = (
     ("Covered focus", lambda f: f.covered_focus > 0),
     ("Walk unfinished", lambda f: f.walk_end != "end"),
     ("Phone overflow", lambda f: f.overflow_px > 0),
+    ("Clipped text", lambda f: f.clipped_text > 0),
     ("Console errors", lambda f: f.console_errors > 0),
     ("Failed requests", lambda f: f.failed_requests > 0),
     ("Missing head tags", lambda f: len(f.missing_head) > 0),
@@ -106,6 +109,10 @@ def read_function(path: Path) -> FunctionSummary:
         covered_focus=sum(_field(path, stop, "covered", bool) for stop in stops),
         walk_end=_field(path, walk, "ended_by", str),
         overflow_px=_field(path, raw, "phone_overflow_px", int),
+        clipped_text=len(_field(path, raw, "phone_clipped_text", list)),
+        # Captures made before the walk recorded its end hold no such field.
+        clipped_text_complete="phone_clipped_text_ended_by" not in raw
+        or _field(path, raw, "phone_clipped_text_ended_by", str) == "end",
         console_errors=sum(
             not str(line).startswith(RESOURCE_ERROR_PREFIX) for line in console_errors
         ),
@@ -312,6 +319,7 @@ BUILD_COLUMNS = (
     "Covered focus",
     "Walk",
     "Overflow px",
+    "Clipped text",
     "Console errors",
     "Failed requests",
     "Missing head",
@@ -331,6 +339,7 @@ def _build_row(build: Build, f: FunctionSummary) -> list[object]:
         f.covered_focus,
         f.walk_end,
         f.overflow_px,
+        f.clipped_text if f.clipped_text_complete else f"{f.clipped_text}+",
         f.console_errors,
         f.failed_requests,
         ", ".join(f.missing_head) or "none",

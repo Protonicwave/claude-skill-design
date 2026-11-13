@@ -25,6 +25,7 @@ def function_report(**overrides: Any) -> dict[str, Any]:
             "ended_by": "end",
         },
         "phone_overflow_px": 0,
+        "phone_clipped_text": [],
         "head": dict.fromkeys(("title", "lang", "viewport", "description", "og_image"), True),
         "console_errors": [],
         "failed_requests": [],
@@ -203,6 +204,7 @@ def test_function_problems_are_counted_per_build_and_per_arm(round_dir: Path) ->
                 "ended_by": "repeat",
             },
             phone_overflow_px=40,
+            phone_clipped_text=['p#lede "Fresh pasta"', 'span "Open daily"'],
             head=function_report()["head"] | {"og_image": False},
             console_errors=[
                 "Failed to load resource: the server responded with a status of 404 (Not Found)",
@@ -216,20 +218,33 @@ def test_function_problems_are_counted_per_build_and_per_arm(round_dir: Path) ->
     )
     text = results(round_dir)
     assert (
-        "| profiler | craft | 1 | 1 | 2 | 1 | repeat | 40 | 1 | 1 | og_image | 1 | breach | 95.0 |"
-        in text
+        "| profiler | craft | 1 | 1 | 2 | 1 | repeat | 40 | 2 | 1 | 1 | og_image | 1 | breach"
+        " | 95.0 |" in text
     )
     assert (
-        "| profiler | bare | 1 | 0 | 0 | 0 | end | 0 | 0 | 0 | none | 0 | not run | 20.0 |" in text
+        "| profiler | bare | 1 | 0 | 0 | 0 | end | 0 | 0 | 0 | 0 | none | 0 | not run | 20.0 |"
+        in text
     )
-    assert "| craft | 2 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |" in text
-    assert "| bare | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |" in text
+    assert "| craft | 2 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |" in text
+    assert "| bare | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |" in text
 
 
 @pytest.mark.parametrize(("exit_code", "shown"), [(0, "pass"), (2, "unmeasured")])
 def test_budget_exit_codes_are_named(round_dir: Path, exit_code: int, shown: str) -> None:
     write_function(round_dir, "t1", function_report(budgets={"exit_code": exit_code, "lines": []}))
     assert f"| {shown} | 20.0 |" in results(round_dir)
+
+
+def test_clipped_text_cut_short_by_a_limit_is_marked(round_dir: Path) -> None:
+    write_function(
+        round_dir,
+        "t2",
+        function_report(
+            phone_clipped_text=['p#lede "Fresh pasta"', 'span "Open daily"'],
+            phone_clipped_text_ended_by="limit",
+        ),
+    )
+    assert "| profiler | craft | 1 | 0 | 0 | 0 | end | 0 | 2+ | 0 |" in results(round_dir)
 
 
 def test_a_missing_function_report_exits_2_naming_it(
@@ -268,6 +283,8 @@ def test_a_moved_round_still_finds_its_captures(round_dir: Path) -> None:
     [
         {"phone_overflow_px": "40"},
         {"phone_overflow_px": True},
+        {"phone_clipped_text": "p#lede"},
+        {"phone_clipped_text_ended_by": 3},
         {"elapsed_seconds": "slow"},
         {"budgets": {"exit_code": 7, "lines": []}},
         {"budgets": "breach"},

@@ -14,7 +14,10 @@ Each capture folder holds the images capture.py writes. Within a subject, run i
 of each arm is paired with run i of every other arm; a run whose partner is
 missing is dropped from that pairing and reported. Each build's judged images
 are copied to blind/<token>/, the token drawn from the seed, so no path a judge
-or voter sees names an arm.
+or voter sees names an arm. A phone whole-page image taller than 2,600 px is
+also cut there into tiles of at most that height, top to bottom, and judges see
+the tiles in its place: a taller image reaches them shrunk to a fraction of its
+width. The vote page shows it whole, in a scrolling box.
 
 ROUND receives briefs/<pair>-<order>.md (in order 1 the pair's first build is
 page A, in order 2 it is page B), an empty verdicts/ for the judges, vote.html
@@ -24,7 +27,8 @@ paths are kept as the manifest gives them, so a round whose captures sit
 inside it can be moved.
 
 Exit code 2 means nothing was written: the manifest or a prompt is missing or
-malformed, a capture lacks an image, no two arms share a subject and run, or
+malformed, a capture lacks an image, a phone whole-page image cannot be read
+as an image, no two arms share a subject and run, or
 ROUND has a key.json already, since re-pairing would orphan any verdicts
 written against it. A verdicts/ folder holding files without key.json is
 refused for the same reason. Briefs and blind images left by a pairing that
@@ -46,19 +50,23 @@ from pathlib import Path
 from string import Template
 from typing import Any, Literal, get_args
 
+from PIL import Image
+
 from views import MOTION_FRAME_SECONDS, SCROLL_DEPTHS_PERCENT, motion_image, scroll_image
 
 Choice = Literal["A", "B", "tie"]
 CHOICES: tuple[Choice, ...] = get_args(Choice)
 CRITERIA = ("first_screen", "whole_page", "imagery", "type", "motion", "fit", "overall")
-JUDGED_IMAGES = (
+PHONE_FULL = "phone-full.png"
+CAPTURE_IMAGES = (
     "desktop-first.png",
     "desktop-full.png",
     *(scroll_image("desktop", percent) for percent in SCROLL_DEPTHS_PERCENT),
     *(motion_image("desktop", seconds) for seconds in MOTION_FRAME_SECONDS),
     "phone-first.png",
-    "phone-full.png",
+    PHONE_FULL,
 )
+MAX_TILE_HEIGHT_PX = 2600
 MAX_BUILDS = 200
 MIN_ARMS = 2
 DEFAULT_VOTES = 10
@@ -241,10 +249,17 @@ def parse_manifest(path: Path) -> Manifest:
 
 def _check_images(round_dir: Path, builds: list[Build]) -> None:
     for build in builds:
-        for name in JUDGED_IMAGES:
-            image = round_dir / build.capture / name
-            if not image.is_file():
-                raise RoundError(f"capture image {image} not found")
+        for name in CAPTURE_IMAGES:
+            path = round_dir / build.capture / name
+            if not path.is_file():
+                raise RoundError(f"capture image {path} not found")
+        # Read whole, so a truncated file fails here rather than while tiling.
+        phone_full = round_dir / build.capture / PHONE_FULL
+        try:
+            with Image.open(phone_full) as image:
+                image.load()
+        except (OSError, Image.DecompressionBombError) as error:
+            raise RoundError(f"capture image {phone_full} cannot be read: {error}") from error
 
 
 def match_builds(builds: list[Build]) -> tuple[list[tuple[Build, Build]], list[str]]:
@@ -325,7 +340,7 @@ $subject
 
 ## Images
 
-Each page has the same views: the first screen at 1440 by 900 after load; the whole page at 1440 wide; the screen at 25, 50 and 75% of the page's depth; the first screen 0.25, 0.75, 1.5 and 3 s after navigation, which shows its motion; the first screen at 375 by 812; the whole page at 375 wide.
+Each page has the same views: the first screen at 1440 by 900 after load; the whole page at 1440 wide; the screen at 25, 50 and 75% of the page's depth; the first screen 0.25, 0.75, 1.5 and 3 s after navigation, which shows its motion; the first screen at 375 by 812; the whole page at 375 wide, in tiles from top to bottom when it is long.
 
 ## Page A
 
@@ -337,11 +352,32 @@ $page_b
 """)  # noqa: E501 (each brief field is one line, as the subagent brief format expects)
 
 
-def _image_list(folder: Path) -> str:
-    return "\n".join(f"- {(folder / name).as_posix()}" for name in JUDGED_IMAGES)
+def _cut_phone_tiles(folder: Path) -> list[str]:
+    """Cut folder's phone whole-page image into even tiles if it is tall; return their names.
+
+    Even tiles keep the last one from being a sliver a judge cannot read.
+    """
+    with Image.open(folder / PHONE_FULL) as image:
+        if image.height <= MAX_TILE_HEIGHT_PX:
+            return [PHONE_FULL]
+        count = -(-image.height // MAX_TILE_HEIGHT_PX)
+        tile_height = -(-image.height // count)
+        tiles = []
+        for number, top in enumerate(range(0, image.height, tile_height), start=1):
+            name = f"phone-full-{number}.png"
+            bottom = min(top + tile_height, image.height)
+            image.crop((0, top, image.width, bottom)).save(folder / name)
+            tiles.append(name)
+        return tiles
 
 
-def write_brief(round_dir: Path, pair: Pair, order: int, prompt: str) -> None:
+def _image_list(folder: Path, names: list[str]) -> str:
+    return "\n".join(f"- {(folder / name).as_posix()}" for name in names)
+
+
+def write_brief(
+    round_dir: Path, pair: Pair, order: int, prompt: str, judged: dict[str, list[str]]
+) -> None:
     page_a, page_b = pair.pages(order)
     blind = round_dir.resolve() / "blind"
     text = BRIEF.substitute(
@@ -349,8 +385,8 @@ def write_brief(round_dir: Path, pair: Pair, order: int, prompt: str) -> None:
         rubric=RUBRIC.as_posix(),
         keys=", ".join(f'"{criterion}"' for criterion in CRITERIA),
         subject=prompt,
-        page_a=_image_list(blind / page_a),
-        page_b=_image_list(blind / page_b),
+        page_a=_image_list(blind / page_a, judged[page_a]),
+        page_b=_image_list(blind / page_b, judged[page_b]),
     )
     (round_dir / "briefs" / f"{pair.id}-{order}.md").write_text(text, encoding="utf-8")
 
@@ -443,7 +479,7 @@ def _vote_page_column(token: str, page: str) -> str:
         for seconds in MOTION_FRAME_SECONDS
     )
     desktop_full = _figure(token, "desktop-full.png", "desktop whole page", page)
-    phone_full = _figure(token, "phone-full.png", "phone whole page", page)
+    phone_full = _figure(token, PHONE_FULL, "phone whole page", page)
     return (
         f'<div class="page"><h3>Page {page}</h3>'
         + _figure(token, "desktop-first.png", "desktop first screen", page)
@@ -473,16 +509,21 @@ def write_round(round_dir: Path, manifest: Manifest, key: Key) -> None:
     for stale in (round_dir / "blind", round_dir / "briefs"):
         if stale.exists():
             shutil.rmtree(stale)
+    judged = {}
     for token, build in key.builds.items():
         folder = round_dir / "blind" / token
         folder.mkdir(parents=True, exist_ok=True)
-        for name in JUDGED_IMAGES:
+        for name in CAPTURE_IMAGES:
             shutil.copyfile(round_dir / build.capture / name, folder / name)
+        tiles = _cut_phone_tiles(folder)
+        judged[token] = [
+            tile for name in CAPTURE_IMAGES for tile in (tiles if name == PHONE_FULL else [name])
+        ]
     (round_dir / "briefs").mkdir(exist_ok=True)
     (round_dir / "verdicts").mkdir(exist_ok=True)
     for pair in key.pairs:
         for order in (1, 2):
-            write_brief(round_dir, pair, order, manifest.prompts[pair.subject])
+            write_brief(round_dir, pair, order, manifest.prompts[pair.subject], judged)
     voted = [pair for pair in key.pairs if pair.id in key.votes]
     page = VOTE_PAGE.substitute(
         rubric=html.escape(RUBRIC.read_text(encoding="utf-8")),

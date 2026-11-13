@@ -5,6 +5,7 @@ import socket
 import sys
 import time
 from collections.abc import Iterator
+from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
@@ -25,10 +26,14 @@ CLEAN_PAGE = """<!doctype html>
 <meta name="description" content="A page with nothing wrong.">
 <meta property="og:image" content="/card.png">
 <link rel="icon" href="data:,">
+<style>
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                     clip-path: inset(50%); white-space: nowrap; }
+</style>
 </head>
 <body>
 <main>
-<h1>Clean fixture</h1>
+<h1>Clean fixture <span class="visually-hidden">with text only a screen reader reads</span></h1>
 <p><a href="#more">Read more</a></p>
 <label for="email">Email</label> <input id="email" type="email">
 <button type="button">Send</button>
@@ -60,6 +65,10 @@ FAULTY_PAGE = """<!doctype html>
 <button type="button"></button>
 <p><a id="bare" href="#b">No focus style</a></p>
 <div class="wide"></div>
+<p id="clipped" style="width: 200px; overflow: hidden; white-space: nowrap">
+  This sentence runs far past the edge of its narrow box</p>
+<div id="scroller" style="width: 200px; overflow-x: auto; white-space: nowrap">
+  This sentence runs past its box too, which scrolls to show it</div>
 <img src="missing.png" alt="">
 </main>
 <script>console.error("fixture error");</script>
@@ -69,9 +78,17 @@ FAULTY_PAGE = """<!doctype html>
 
 TRAP_PAGE = """<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Trap fixture</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trap fixture</title>
+<style>html, body { overflow-x: hidden; }</style>
+</head>
 <body>
 <main>
+<span id="parked" style="position: absolute; left: -9999px">Read by screen readers only</span>
+<p id="past" style="white-space: nowrap">
+  This sentence is long enough to run well past the right edge of a phone screen</p>
 <a href="#a">Before</a>
 <label for="when">Date</label> <input id="when" type="date">
 <bench-pair></bench-pair>
@@ -228,6 +245,29 @@ def test_clean_page_does_not_overflow(clean: dict[str, Any]) -> None:
     assert clean["phone_overflow_px"] == 0
 
 
+def test_text_clipped_by_its_own_box_is_reported(faulty: dict[str, Any]) -> None:
+    assert any(label.startswith("p#clipped") for label in faulty["phone_clipped_text"])
+
+
+def test_text_in_a_box_that_scrolls_is_not_clipped(faulty: dict[str, Any]) -> None:
+    assert not any(label.startswith("div#scroller") for label in faulty["phone_clipped_text"])
+
+
+def test_text_past_the_phone_width_under_hidden_overflow_is_reported(
+    trap: dict[str, Any],
+) -> None:
+    assert trap["phone_overflow_px"] == 0
+    assert any(label.startswith("p#past") for label in trap["phone_clipped_text"])
+
+
+def test_text_parked_wholly_off_screen_is_not_clipped(trap: dict[str, Any]) -> None:
+    assert not any(label.startswith("span#parked") for label in trap["phone_clipped_text"])
+
+
+def test_visually_hidden_text_is_not_clipped(clean: dict[str, Any]) -> None:
+    assert clean["phone_clipped_text"] == []
+
+
 def test_walk_ends_when_focus_leaves_the_page(clean: dict[str, Any]) -> None:
     assert clean["keyboard_walk"]["ended_by"] == "end"
 
@@ -287,6 +327,10 @@ def test_motion_frames_are_taken_no_earlier_than_scheduled(clean: dict[str, Any]
         assert seconds >= scheduled
 
 
+# Longer than the 1 s load timeout, so the response commits after it has passed.
+SLOW_RESPONSE_SECONDS = 1.5
+
+
 @pytest.fixture(scope="module")
 def slow_out(_chrome: None, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
     """Capture a page whose image comes from a port that accepts and never answers."""
@@ -306,6 +350,21 @@ def test_load_that_never_finishes_is_recorded(slow_out: Path) -> None:
     report = _report(slow_out)
     assert report["timed_out_loads"] == ["desktop", "phone", "desktop-reduced", "phone-reduced"]
     assert (slow_out / "desktop-first.png").is_file()
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_response_slower_than_the_load_timeout_is_still_captured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def answer_late(handler: SimpleHTTPRequestHandler) -> None:
+        time.sleep(SLOW_RESPONSE_SECONDS)
+        SimpleHTTPRequestHandler.do_GET(handler)
+
+    monkeypatch.setattr(capture._QuietHandler, "do_GET", answer_late)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    report = _capture(build, tmp_path / "out", "--load-timeout", "1")
+    assert (tmp_path / "out" / "phone-reduced.png").is_file()
+    assert report["phone_overflow_px"] == 0
 
 
 @pytest.mark.skipif(shutil.which("npx") is None, reason="npx is needed to run Lighthouse")
@@ -455,6 +514,7 @@ def endless(_chrome: None, tmp_path_factory: pytest.TempPathFactory) -> dict[str
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(capture, "MAX_TAB_STOPS", 2)
         patch.setattr(capture, "MAX_SCROLL_STEPS", 3)
+        patch.setattr(capture, "MAX_TEXT_NODES", 1)
         return _capture(_build(root / "site", ENDLESS_PAGE), root / "out")
 
 
@@ -462,6 +522,14 @@ def test_walk_stops_at_the_tab_stop_limit(endless: dict[str, Any]) -> None:
     walk = endless["keyboard_walk"]
     assert walk["ended_by"] == "limit"
     assert len(walk["stops"]) == 2
+
+
+def test_clipped_text_walk_records_its_limit(endless: dict[str, Any]) -> None:
+    assert endless["phone_clipped_text_ended_by"] == "limit"
+
+
+def test_clipped_text_walk_records_reaching_the_end(clean: dict[str, Any]) -> None:
+    assert clean["phone_clipped_text_ended_by"] == "end"
 
 
 def test_page_that_grows_on_scroll_is_captured(endless: dict[str, Any]) -> None:

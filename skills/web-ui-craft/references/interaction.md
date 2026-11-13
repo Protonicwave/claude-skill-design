@@ -4,7 +4,7 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 ## Navigation
 
-- **Keep it visible.** In Nielsen Norman Group's study of 179 people, hidden (hamburger) navigation on desktop was used in 27% of cases against 48% for visible links, cut content discoverability by more than 20%, and made tasks at least 39% slower. Show top-level links on desktop. On mobile, show up to four links visibly and put only the overflow in a menu.
+- **Keep it visible.** In Nielsen Norman Group's study of 179 people, hidden (hamburger) navigation on desktop was used in 27% of cases against 48% for visible links, cut content discoverability by more than 20%, and made tasks at least 39% slower. Show top-level links on desktop. On mobile, show up to four links visibly and put only the overflow in a menu. The phone header, links and action together, fits one row at 375 px: shorten labels, show fewer links or move the rest into the menu rather than let it wrap or push past the edge.
 - **Sticky headers**: small, opaque, high-contrast, barely animated. Best compromise: hide on scroll down, slide back in over 300 to 400 ms on scroll up. Aim for a content-to-chrome ratio near 13:1, not 2:1.
 - **Command palette** (Cmd/Ctrl+K) for apps with many actions: the one place every command can be found, fuzzy matching with synonyms, each result showing its shortcut, opening instantly with no animation. It sits on top of visible navigation, never instead of it.
 - **Mechanics people notice when broken:**
@@ -20,6 +20,8 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe) are fast and quiet: routine motion takes 120 to 300 ms, and the effort goes into the hero piece demonstrating itself and into elements travelling between states. Brand sites, where the site is the experience (Lando Norris, the Awwwards winners), choreograph the scroll itself with scrubbed scenes, smooth scrolling and real-time 3D. Pick the tier from the subject, name it in the brief's Motion line, and spend the motion where that tier spends it.
 
+Every page gets one signature movement, a quiet page included, and it is a movement the subject makes in its own world: a parcel travelling its route, a print head laying down a line, the needle of a scale settling, a departure board flipping to the next train. On a restrained page it can be small, a figure ticking once or a mark drawing itself, but it still comes from the subject. A fade or slide applied to every block belongs to no subject: put the Motion line through the swap test, and if a neighbouring product could keep it unchanged, the movement has not been chosen yet.
+
 ### Choose the tier
 
 | | Product tier | Brand tier |
@@ -34,10 +36,10 @@ Acclaimed sites move in one of two ways. Product sites (Linear, Raycast, Stripe)
 A Motion line that someone else could build from:
 
 ```
-Motion: product tier. Signature moment: the dispatch board plays a 9 s loop (a load is
-        assigned, its lorry crosses the route map, the delivery slot turns green), lead element
-        the lorry marker. Menus 150 ms ease-out; tabs and the command menu instant; nothing
-        moves on scroll.
+Motion: product tier. Signature moment: the dispatch board opens complete, every load
+        placed, then plays a 9 s loop (a load is assigned, its lorry crosses the route map,
+        the delivery slot turns green), lead element the lorry marker. Menus 150 ms ease-out;
+        tabs and the command menu instant; nothing moves on scroll.
 ```
 
 ### Budget by frequency
@@ -101,7 +103,7 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 - **One lead.** One element moves first and furthest and carries the eye to where it should land. Everything else follows it and moves less.
 - **Overlap, do not queue.** Followers start 40 to 80 ms apart, each before the previous one has finished. Steps that wait for each other read as slow.
 - **One curve, durations by distance.** Elements that travel further take longer; small ones are quicker. Mixing curve families looks accidental.
-- **Readable fast.** A page-load sequence is over in about 1 s, and the headline is legible within the first 300 ms. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
+- **Readable fast.** A page-load sequence is over in about 1 s and at rest by 1.5 s at the latest, and the headline is legible within the first 300 ms. A looping signature piece is not part of that sequence: it opens complete and keeps changing one part at a time (`artefacts.md`). Every piece of the first screen is present and readable in the first frame; the entrance moves things into place, it does not build them up. A chart still drawing its axes or a table still filling its rows after 1.5 s reads as loading, not as design. The LCP element never waits at opacity 0: Chrome does not count an element at opacity 0 as painted, so a delayed fade on the headline delays LCP. Move it without fading it.
 - **The last frame is the design.** Compose the final frame first, then the route to it. Award jurors judge whether static frames look intentional without motion, and reduced-motion users see only that frame.
 - **Once.** An entrance does not replay when the reader scrolls back or follows an anchor.
 - **The hero piece can carry it.** On the product tier the signature moment is usually the piece playing itself, built as `artefacts.md` describes; the choreography rules above apply to each step of its loop.
@@ -109,16 +111,15 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 ```css
 @media (prefers-reduced-motion: no-preference) {
   .hero > * {
-    animation: rise var(--dur-settle) var(--spring-settle) both;
+    animation: arrive var(--dur-settle) var(--spring-settle) both;
     animation-delay: calc(var(--step, 0) * 60ms);
   }
-  .hero > .lead { animation-name: arrive; }
-  @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
-  @keyframes arrive { from { transform: translateY(24px); } }
+  .hero > .lead { --rise: 32px; }
+  @keyframes arrive { from { transform: translateY(var(--rise, 16px)); } }
 }
 ```
 
-Set `--step` on each child in order, with the lead at 0. If the headline is the LCP element, it is the lead: the `lead` class moves it without fading, so it is painted in the first frame.
+Set `--step` on each child in order, with the lead at 0. Nothing fades: every child is painted at full opacity in the first frame and only moves into place, the lead furthest, so the first screen reads at once and the headline counts for LCP. A follower faded in from opacity 0 is still faint at a quarter of a second, and if it is the primary action, the reader's first look misses it.
 
 ### Shared-element motion
 
@@ -190,6 +191,7 @@ CSS scroll-driven animations drive a keyframe animation from scroll position ins
 ```css
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
+    @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
     .scene-step {
       animation: rise linear both;
       animation-timeline: view();         /* after the shorthand, which resets it */
@@ -299,6 +301,7 @@ Anything that moves for more than five seconds alongside other content needs a p
 - **Errors** say what happened and how to fix it, next to the cause, in the interface's voice. They do not apologise.
 - **Copy** is specific: "Save API key", not "Continue". Sentence case, active voice, from the user's side. An action keeps one name through the whole flow: "Publish" on the button, "Publishing…" while it runs, "Published" in the confirmation. An ellipsis character for in-progress states ("Saving…") and for menu items that open a follow-up.
 - **Endings matter** (Peak-End Rule): completion, confirmation and success states deserve as much care as the hero.
+- **A confirmation appears only after its action.** Success and error messages start `hidden` (or outside the DOM) and are shown by the event that produces them. "Order placed" under an empty form tells the visitor something false. The polite `aria-live` region that will announce the message is present and empty from load, since a region added at the moment of the change is not announced.
 
 ## Forms
 
@@ -359,19 +362,23 @@ Run this on the built page, not on the plan.
 - [ ] One signature moment, rich enough to reward a long look; everything else quieter than the content.
 - [ ] No content needs a script to become visible: hidden starting states for reveals are applied by script, not by the stylesheet.
 - [ ] Every colour, font, radius, shadow and spacing value comes from a token.
-- [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared.
+- [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared; no figure, date or duration split across lines; condensed display type with clear word spaces.
 - [ ] The tell check in `slop-tells.md` passes, or each remaining tell has a stated reason.
 - [ ] Beside a screenshot of the reference site, the largest gap in craft is named and closed or explained.
 
 **Use**
-- [ ] Top-level navigation visible on desktop; real links; state in the URL where relevant.
+- [ ] Top-level navigation visible on desktop and on one row at 375 px; real links; state in the URL where relevant.
 - [ ] Hover, active, focus-visible, disabled, loading, empty and error states exist and look designed.
 - [ ] Each action keeps one name from its button to its confirmation.
+- [ ] No success, confirmation or error message is visible before the action that produces it.
+- [ ] Every date, place, price, count, version, command and rule on the page was supplied, or is a value the subject makes obvious and the report lists as an assumption; the rest are written around, or shown as placeholders that stay off the first screen, away from the primary action and its controls, and out of the closing section, and listed in the report.
 - [ ] Forms: labels, types, autocomplete, 16 px inputs, errors beside fields, paste allowed.
 - [ ] Targets at least 24 px, 44 px on touch.
 
 **Motion**
 - [ ] The page moves like its tier: no scroll choreography on the product tier; product-tier rules everywhere outside the brand tier's scene.
+- [ ] The signature movement is one the subject makes, not a fade applied to every block.
+- [ ] The first screen is complete and readable in its first frame and its entrance is at rest by 1.5 s, with nothing faded in from opacity 0; a looping signature piece, the one thing that keeps moving, opens on a finished frame and makes its first change within about 1 s.
 - [ ] The signature moment has one lead, overlapping followers and a last frame that looks finished on its own.
 - [ ] Elements that change place between states travel there instead of cutting.
 - [ ] Scroll-linked and pointer motion sit behind `@supports` and `prefers-reduced-motion: no-preference`, and the page reads correctly without them.
