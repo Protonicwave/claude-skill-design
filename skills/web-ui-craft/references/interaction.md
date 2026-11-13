@@ -111,16 +111,15 @@ The one rare moment that gets rich motion, usually the hero on first view, is ch
 ```css
 @media (prefers-reduced-motion: no-preference) {
   .hero > * {
-    animation: rise var(--dur-settle) var(--spring-settle) both;
+    animation: arrive var(--dur-settle) var(--spring-settle) both;
     animation-delay: calc(var(--step, 0) * 60ms);
   }
-  .hero > .lead { animation-name: arrive; }
-  @keyframes rise { from { opacity: 0; transform: translateY(24px); } }
-  @keyframes arrive { from { transform: translateY(24px); } }
+  .hero > .lead { --rise: 32px; }
+  @keyframes arrive { from { transform: translateY(var(--rise, 16px)); } }
 }
 ```
 
-Set `--step` on each child in order, with the lead at 0. If the headline is the LCP element, it is the lead: the `lead` class moves it without fading, so it is painted in the first frame.
+Set `--step` on each child in order, with the lead at 0. Nothing fades: every child is painted at full opacity in the first frame and only moves into place, the lead furthest, so the first screen reads at once and the headline counts for LCP. A follower faded in from opacity 0 is still faint at a quarter of a second, and if it is the primary action, the reader's first look misses it.
 
 ### Shared-element motion
 
@@ -375,7 +374,7 @@ Run this on the built page, not on the plan.
 **Motion**
 - [ ] The page moves like its tier: no scroll choreography on the product tier; product-tier rules everywhere outside the brand tier's scene.
 - [ ] The signature movement is one the subject makes, not a fade applied to every block.
-- [ ] The first screen is complete and readable in its first frame and at rest by 1.5 s; a looping piece opens on a finished frame.
+- [ ] The first screen is complete and readable in its first frame and at rest by 1.5 s, with nothing faded in from opacity 0; a looping piece opens on a finished frame and makes its first change within about 1 s.
 - [ ] The signature moment has one lead, overlapping followers and a last frame that looks finished on its own.
 - [ ] Elements that change place between states travel there instead of cutting.
 - [ ] Scroll-linked and pointer motion sit behind `@supports` and `prefers-reduced-motion: no-preference`, and the page reads correctly without them.
