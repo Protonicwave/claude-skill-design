@@ -43,8 +43,9 @@ A label printed over a dot or a line reads as broken ("Harl●w") in every scree
 - Check collisions in code, not by eye, and look at the result at both widths. A map that is redrawn for a phone gets fewer labels, not smaller ones.
 
 ```js
-// Marks and labels share one SVG coordinate system. `labels` holds { text, x, y, r } for each
-// labelled mark, highest priority first; each label tries four sides and is hidden if none is clear.
+// Marks and labels share the SVG's viewBox coordinates. `labels` holds { text, x, y, r } for each
+// labelled mark, highest priority first; each label tries four sides and is hidden if no side is
+// clear of other marks and labels and inside the map.
 const GAP = 4;
 const SIDES = [
   { dx: 1, dy: 0, anchor: "start", baseline: "middle" },
@@ -54,6 +55,10 @@ const SIDES = [
 ];
 const overlaps = (a, b) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+const view = svg.viewBox.baseVal;
+const inside = (box) =>
+  box.x >= view.x && box.y >= view.y &&
+  box.x + box.width <= view.x + view.width && box.y + box.height <= view.y + view.height;
 
 function place(text, x, y, r, side) {
   text.setAttribute("x", x + side.dx * (r + GAP));
@@ -68,7 +73,7 @@ for (const { text, x, y, r } of labels) {
   text.style.display = "";
   const side = SIDES.find((s) => {
     const box = place(text, x, y, r, s);
-    return !taken.some((other) => overlaps(box, other));
+    return inside(box) && !taken.some((other) => overlaps(box, other));
   });
   if (side === undefined) text.style.display = "none";
   else taken.push(text.getBBox());
