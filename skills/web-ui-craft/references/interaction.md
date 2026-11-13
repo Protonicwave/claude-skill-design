@@ -4,7 +4,7 @@ What makes an interface feel good is mostly a dense set of small, checkable rule
 
 ## Navigation
 
-- **Keep it visible.** In Nielsen Norman Group's study of 179 people, hidden (hamburger) navigation on desktop was used in 27% of cases against 48% for visible links, cut content discoverability by more than 20%, and made tasks at least 39% slower. Show top-level links on desktop. On mobile, show up to four links visibly and put only the overflow in a menu.
+- **Keep it visible.** In Nielsen Norman Group's study of 179 people, hidden (hamburger) navigation on desktop was used in 27% of cases against 48% for visible links, cut content discoverability by more than 20%, and made tasks at least 39% slower. Show top-level links on desktop. On mobile, show up to four links visibly and put only the overflow in a menu. The phone header, links and action together, fits one row at 375 px: shorten labels, show fewer links or move the rest into the menu rather than let it wrap or push past the edge.
 - **Sticky headers**: small, opaque, high-contrast, barely animated. Best compromise: hide on scroll down, slide back in over 300 to 400 ms on scroll up. Aim for a content-to-chrome ratio near 13:1, not 2:1.
 - **Command palette** (Cmd/Ctrl+K) for apps with many actions: the one place every command can be found, fuzzy matching with synonyms, each result showing its shortcut, opening instantly with no animation. It sits on top of visible navigation, never instead of it.
 - **Mechanics people notice when broken:**
@@ -361,12 +361,12 @@ Run this on the built page, not on the plan.
 - [ ] One signature moment, rich enough to reward a long look; everything else quieter than the content.
 - [ ] No content needs a script to become visible: hidden starting states for reveals are applied by script, not by the stylesheet.
 - [ ] Every colour, font, radius, shadow and spacing value comes from a token.
-- [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared.
+- [ ] Headings balanced, paragraphs at a readable measure, numbers tabular where compared; no figure, date or duration split across lines; condensed display type with clear word spaces.
 - [ ] The tell check in `slop-tells.md` passes, or each remaining tell has a stated reason.
 - [ ] Beside a screenshot of the reference site, the largest gap in craft is named and closed or explained.
 
 **Use**
-- [ ] Top-level navigation visible on desktop; real links; state in the URL where relevant.
+- [ ] Top-level navigation visible on desktop and on one row at 375 px; real links; state in the URL where relevant.
 - [ ] Hover, active, focus-visible, disabled, loading, empty and error states exist and look designed.
 - [ ] Each action keeps one name from its button to its confirmation.
 - [ ] No success, confirmation or error message is visible before the action that produces it.

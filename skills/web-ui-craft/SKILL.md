@@ -121,8 +121,8 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Dimension | Default |
 |---|---|
 | Body text | 16 to 20 px, line height about 1.5, measure 45 to 90 characters (aim for about 65) |
-| Headings | Line height 1.0 to 1.2, tracking about -0.02em from 24 px up, `text-wrap: balance` |
-| Paragraphs | `text-wrap: pretty`; bold and italic never together |
+| Headings | Line height 1.0 to 1.2, tracking about -0.02em from 24 px up (0 or more on condensed faces), `text-wrap: balance` |
+| Paragraphs | `text-wrap: pretty`; bold and italic never together; no line break inside a figure, date, time or duration |
 | Type scale | Fluid via `clamp()`, ratio about 1.2 on small screens to 1.25 on large |
 | All caps | Rare, under one line, letter-spacing 0.05em to 0.12em |
 | Colour | OKLCH; one tinted neutral scale, one accent, three or four semantic colours, each with role-based steps |
@@ -134,7 +134,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 | Radii | Two or three values; nested radius = outer radius minus padding |
 | Icons | One family, one grid, one stroke width; no emoji as interface icons |
 | Motion | Tier named in the brief; a signature movement taken from the subject; first screen complete in its first frame and at rest by 1.5 s; routine motion under 300 ms (modals up to 400, large sheets up to 500), strong ease-out or a settling spring, `transform` and `opacity` only, from the trigger, none on keyboard or high-frequency actions |
-| Navigation | Visible top-level links on desktop, up to four visible on mobile, UI state in the URL |
+| Navigation | Visible top-level links on desktop, up to four visible on mobile on one row at 375 px, UI state in the URL |
 | Loading | Nothing under about 1 s; delay indicators 150 to 300 ms, then show for at least 300 to 500 ms |
 | Performance | LCP at most 2.5 s, INP at most 200 ms, CLS at most 0.1; lab total blocking time at most 200 ms; script within the brief's budget; visible response to input within 100 ms |
 | Targets and focus | At least 24 px (44 px on touch); visible `:focus-visible` ring never hidden by sticky elements |
