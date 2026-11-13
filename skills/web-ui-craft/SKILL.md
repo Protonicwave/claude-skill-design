@@ -96,7 +96,7 @@ Treat the first build as a draft. Run all five checks, fix what they find, and g
    python <skill-dir>/scripts/check_slop.py <front-end source folder>
    ```
 
-2. **Phone overflow** over the whole page. Fix every `breach` (exit code 1) until it passes.
+2. **Phone layout** over the whole page: overflow past 375 px and a missing viewport tag. The script serves the page's folder itself; for an app with a build step, point it at the built `index.html`. Fix every `breach` (exit code 1) until it passes.
 
    ```
    python <skill-dir>/scripts/check_phone.py <page>.html
@@ -174,7 +174,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
 - `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
-- `scripts/check_phone.py`: measures how far the page runs past a 375 px screen and names the elements responsible, used in step 5.
+- `scripts/check_phone.py`: measures how far the page runs past a 375 px screen, names the elements responsible and checks the viewport tag, used in step 5.
 - `scripts/check_budgets.py`: reads a Lighthouse report and compares it with the page budgets, used in step 5.
 
 The evidence behind every rule is in the `research/` folder of the repository this skill is published from.

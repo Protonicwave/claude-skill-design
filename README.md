@@ -14,7 +14,7 @@ Most of the effort goes into one hero piece built in code to a fidelity checklis
 - `skills/web-ui-craft/references/`: detail loaded on demand.
 - `skills/web-ui-craft/scripts/check_slop.py`: static scan for craft defects and generic tells.
 - `skills/web-ui-craft/scripts/check_budgets.py`: compares a Lighthouse report with the page budgets.
-- `skills/web-ui-craft/scripts/check_phone.py`: measures how far a page runs past a 375 px screen, from headless Chrome.
+- `skills/web-ui-craft/scripts/check_phone.py`: measures how far a page runs past a 375 px screen and checks its viewport tag, from headless Chrome.
 - `bench/capture.py`: captures a built page for the design bench and checks how it functions.
 - `bench/pairs.py` and `bench/score.py`: pair a bench round's builds blindly for judging and voting, then score the verdicts and votes against `bench/rubric.md`.
 - `research/`: the report and notes every rule is drawn from, with sources. `research/notes/premium-benchmark.md` records two test pages built with the skill before and after its premium revision.
