@@ -1,8 +1,10 @@
 import json
 import os
 import shutil
+import signal
 import socket
 import sys
+import threading
 import time
 from collections.abc import Iterator
 from http.server import SimpleHTTPRequestHandler
@@ -10,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from playwright.sync_api import BrowserType, sync_playwright
+from playwright.sync_api import Browser, BrowserType, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
 
 import capture
@@ -497,6 +499,78 @@ def test_chrome_that_cannot_start_exits_2(
     build = _build(tmp_path / "site", CLEAN_PAGE)
     assert main([str(build), str(tmp_path / "out")]) == 2
     assert "Chrome could not be started: no Chrome here" in capsys.readouterr().err
+
+
+# Long enough for Playwright to see the driver's pipe close before the next call.
+DRIVER_EXIT_PAUSE_SECONDS = 1.0
+# Lands inside the desktop motion frames, which run for 3 s after navigation.
+DRIVER_STOP_DURING_CAPTURE_SECONDS = 2.0
+
+
+def _driver_pid(owner: Browser | BrowserType) -> int:
+    # Playwright offers no public handle on its driver process.
+    return int(owner._impl_obj._connection._transport._proc.pid)  # type: ignore[attr-defined]
+
+
+@pytest.mark.usefixtures("_chrome")
+@pytest.mark.parametrize(
+    "pause_seconds", [0.0, DRIVER_EXIT_PAUSE_SECONDS], ids=["at_once", "after_it_has_exited"]
+)
+def test_capture_after_the_driver_stops_exits_2(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    pause_seconds: float,
+) -> None:
+    capture_build = capture.capture_build
+
+    def stop_driver_then_capture(browser: Browser, *args: Any) -> capture.FunctionReport:
+        os.kill(_driver_pid(browser), signal.SIGTERM)
+        time.sleep(pause_seconds)
+        return capture_build(browser, *args)
+
+    monkeypatch.setattr(capture, "capture_build", stop_driver_then_capture)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    assert main([str(build), str(tmp_path / "out")]) == 2
+    assert f"capture of {build} failed" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_driver_that_stops_during_a_capture_step_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    capture_build = capture.capture_build
+
+    def capture_while_driver_stops(browser: Browser, *args: Any) -> capture.FunctionReport:
+        stop = threading.Timer(
+            DRIVER_STOP_DURING_CAPTURE_SECONDS, os.kill, (_driver_pid(browser), signal.SIGTERM)
+        )
+        stop.start()
+        try:
+            return capture_build(browser, *args)
+        finally:
+            stop.cancel()
+
+    monkeypatch.setattr(capture, "capture_build", capture_while_driver_stops)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    assert main([str(build), str(tmp_path / "out")]) == 2
+    assert f"capture of {build} failed" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("_chrome")
+def test_driver_that_stops_before_launch_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    launch = BrowserType.launch
+
+    def stop_driver_then_launch(browser_type: BrowserType, **options: Any) -> Browser:
+        os.kill(_driver_pid(browser_type), signal.SIGTERM)
+        return launch(browser_type, **options)
+
+    monkeypatch.setattr(BrowserType, "launch", stop_driver_then_launch)
+    build = _build(tmp_path / "site", CLEAN_PAGE)
+    assert main([str(build), str(tmp_path / "out")]) == 2
+    assert "Chrome could not be started" in capsys.readouterr().err
 
 
 # Each scroll lengthens the page by a screen, so only the step limit ends the pass.
