@@ -38,9 +38,11 @@ A shared token or class changes every place that uses it. Search for its other u
 A flat section is usually one that stops short of what the rest of the page does. Find the strongest thing the page owns (its display type, its signature piece, its accent, its density) and let the target use it at full strength.
 
 - Make one decisive change and quieten what surrounds it. If every element gets louder, nothing is.
-- Pick the change from the target's own weakness: type that does not act in the composition (scale, width, line breaks, what it sits against); a hero piece that is small, floating or lost in empty space (bring it up in scale, crop it on purpose, let it meet the type or the page edge); a composition with no tension; a ground that gives the light nothing to fall on.
+- Pick the change from the target's own weakness: type that does not act in the composition (scale, width, line breaks, what it sits against); a hero piece that is small, floating or lost in empty space (bring it up in scale, crop it on purpose, let it meet the page edge); a composition with no tension; a ground that gives the light nothing to fall on.
 - Work on the hero piece is work on its fidelity as well as its size: an enlarged drawing shows every shortcut. Run the fidelity checklist in `references/artefacts.md` on it afterwards.
 - Glows, gradients, extra accents, badges and more motion are not boldness.
+- Larger type keeps clear of the hero piece: no letter over it and nothing of it through a letter. It stays inside the content edge the rest of the page keeps and clear of the text below, and breaks by sense at both widths.
+- Whatever the hero piece shows on the first screen, its moving part included, still shows there at both widths.
 - The primary action stays on the first screen at both widths, and at least as prominent as it was.
 
 ### Quieter
