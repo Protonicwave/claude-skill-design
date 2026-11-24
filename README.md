@@ -103,7 +103,7 @@ results.md      written by score.py
 7. Vote: open `vote.html`, choose a page or a tie for each pair, export, and save `votes.json` in the round folder.
 8. Score: `uv run python bench/score.py bench/runs/<round>` writes `results.md`: judge tallies per arm pair and criterion, where a choice counts only when both orders agree; agreement between judges and votes; and each build's function checks, and its cost when `usage.json` exists.
 
-   Record cost as each builder replies, from its completion notice, keyed by build id: `{"profiler-bare-1": {"tokens": 81234, "tool_uses": 37, "duration_ms": 212000}}`. Each figure is a positive integer. A build left out reads "not recorded" and is left out of its arm's median. Pairing never reads `usage.json`, so it can be written at any point before scoring.
+   Record cost as each builder replies, from its completion notice, keyed by build id: `{"profiler-bare-1": {"tokens": 81234, "tool_uses": 37, "duration_ms": 212000}}`. Each figure is a positive integer. A build left out reads "not recorded" and is left out of the median for its subject and arm. Pairing never reads `usage.json`, so it can be written at any point before scoring.
 
 Builder brief, one per build, with the subject's prompt pasted at the end:
 

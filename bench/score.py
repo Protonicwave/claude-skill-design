@@ -17,8 +17,9 @@ request appears only as such a line, so a missing favicon is not counted.
 
 An optional usage.json maps a build id, <subject>-<arm>-<run>, to the
 "tokens", "tool_uses" and "duration_ms" its builder reported, each a positive
-integer. results.md then lists each build's cost and the median per arm; a
-build absent from the file reads "not recorded" and is left out of the median.
+integer. results.md then lists each build's cost and the median per subject
+and arm; a build absent from the file reads "not recorded" and is left out of
+the median.
 
 Exit code 2 means nothing was written: key.json is missing, a verdict, votes.json
 or usage.json is malformed, or a function.json is missing or malformed. The
@@ -441,11 +442,16 @@ def _cost_section(scored: Round) -> list[str]:
         ]
         for build in builds
     ]
-    per_arm = []
-    for arm in sorted({build.arm for build in builds}):
-        recorded = [usage[build_id(b)] for b in builds if b.arm == arm and build_id(b) in usage]
-        per_arm.append(
+    medians = []
+    for subject, arm in sorted({(build.subject, build.arm) for build in builds}):
+        recorded = [
+            usage[build_id(build)]
+            for build in builds
+            if (build.subject, build.arm) == (subject, arm) and build_id(build) in usage
+        ]
+        medians.append(
             [
+                subject,
                 arm,
                 len(recorded),
                 *(_median([cost[field] for cost in recorded]) for field in USAGE_FIELDS),
@@ -454,11 +460,18 @@ def _cost_section(scored: Round) -> list[str]:
     return [
         "## Cost",
         "",
-        "What each builder reported. The median covers an arm's recorded builds only.",
+        "What each builder reported. Each median covers one arm's recorded builds of one subject.",
         "",
         *_table(
-            ["Arm", "Recorded builds", "Median tokens", "Median tool uses", "Median duration ms"],
-            per_arm,
+            [
+                "Subject",
+                "Arm",
+                "Recorded builds",
+                "Median tokens",
+                "Median tool uses",
+                "Median duration ms",
+            ],
+            medians,
         ),
         "",
         *_table(["Subject", "Arm", "Run", "Tokens", "Tool uses", "Duration ms"], rows),

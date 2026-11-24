@@ -47,7 +47,7 @@ web-ui-craft has fewer serious function faults. On restaurant, the only subject 
   | Profiler 1 | 242,829 | not recorded |
   | Profiler 2 | 327,250 | not recorded |
 
-- Restaurant medians are 182,844 against 136,005. The arm medians in `results.md` (229,346.5 against 136,005) compare different subjects and should not be read as a ratio. Taste Skill's four builds cost 935,767 tokens and took 15 to 44 minutes each. The eight judges cost 828,418.
+- Restaurant medians are 182,844 against 136,005. Taste Skill's profiler median is 285,039.5. Taste Skill's four builds cost 935,767 tokens and took 15 to 44 minutes each. The eight judges cost 828,418.
 
 ## 4. Limits
 

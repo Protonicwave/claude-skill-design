@@ -374,20 +374,34 @@ def cost_section(round_dir: Path) -> str:
     return results(round_dir).split("## Cost")[1].split("\n## ")[0]
 
 
-def test_cost_is_reported_per_build_and_as_a_median_per_arm(round_dir: Path) -> None:
+def add_second_run(round_dir: Path, subject: str, arm: str) -> None:
+    capture = round_dir / "captures" / "t5"
+    capture.mkdir()
+    (capture / "function.json").write_text(json.dumps(function_report()))
+    path = round_dir / "key.json"
+    key = json.loads(path.read_text())
+    key["builds"]["t5"] = asdict(Build(subject, arm, 2, "captures/t5"))
+    path.write_text(json.dumps(key))
+
+
+def test_cost_is_reported_per_build_and_as_a_median_per_subject_and_arm(
+    round_dir: Path,
+) -> None:
+    add_second_run(round_dir, "restaurant", "bare")
     write_usage(
         round_dir,
         {
-            "profiler-bare-1": figures(100_000),
+            "profiler-bare-1": figures(900_000),
             "profiler-craft-1": figures(300_000, tool_uses=40),
-            "restaurant-bare-1": figures(200_000),
-            "restaurant-craft-1": figures(500_000, tool_uses=21),
+            "restaurant-bare-1": figures(100_000, tool_uses=20),
+            "restaurant-bare-2": figures(200_000, tool_uses=21),
+            "restaurant-craft-1": figures(500_000),
         },
     )
     section = cost_section(round_dir)
     assert "| profiler | craft | 1 | 300,000 | 40 | 60,000 |" in section
-    assert "| bare | 2 | 150,000 | 10 | 60,000 |" in section
-    assert "| craft | 2 | 400,000 | 30.5 | 60,000 |" in section
+    # Profiler's dearer build leaves restaurant's median alone.
+    assert "| restaurant | bare | 2 | 150,000 | 20.5 | 60,000 |" in section
 
 
 def test_cost_is_not_recorded_without_usage_json(round_dir: Path) -> None:
@@ -397,13 +411,13 @@ def test_cost_is_not_recorded_without_usage_json(round_dir: Path) -> None:
 def test_builds_missing_from_usage_json_are_marked_and_left_out_of_the_median(
     round_dir: Path,
 ) -> None:
-    write_usage(
-        round_dir, {"profiler-bare-1": figures(100_000), "restaurant-bare-1": figures(300_000)}
-    )
+    add_second_run(round_dir, "restaurant", "bare")
+    write_usage(round_dir, {"restaurant-bare-2": figures(300_000)})
     section = cost_section(round_dir)
     assert "| restaurant | craft | 1 | not recorded | not recorded | not recorded |" in section
-    assert "| bare | 2 | 200,000 | 10 | 60,000 |" in section
-    assert "| craft | 0 | not recorded | not recorded | not recorded |" in section
+    assert "| restaurant | bare | 1 | not recorded | not recorded | not recorded |" in section
+    assert "| restaurant | bare | 1 | 300,000 | 10 | 60,000 |" in section
+    assert "| restaurant | craft | 0 | not recorded | not recorded | not recorded |" in section
 
 
 @pytest.mark.parametrize(
