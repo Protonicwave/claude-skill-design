@@ -10,7 +10,7 @@ An archive photograph was taken by someone else, of somewhere else, unless it sh
 - **The subject's world** (the ingredient, the craft, the landscape, the species, the tools): not the client's, so it takes a supporting position, at most one large image per section. Never caption it, describe it or set copy beside it so that it reads as the client's dish, room, staff, volunteers or product.
 - **Never**: a recognisable person (on Commons, a `Restrictions` value of `personality` flags one), a logo or a brand's product, a watermark, a photograph presented as evidence of something the subject did, or a rendered or AI-generated image.
 
-A brief that asks for no external images rules out images loaded from another host; a photograph saved into the build and credited meets it. State that reading in the report as an assumption to confirm. A brief that rules out photographs or stock imagery rules these out too.
+"No external images" means no image loaded from another host at runtime. A photograph downloaded into the build and credited meets it, so that wording is not a reason to skip the search. State this reading in the report as an assumption to confirm. Only a brief that rules out photographs, stock or archive imagery by name rules these out.
 
 ## Licences
 
