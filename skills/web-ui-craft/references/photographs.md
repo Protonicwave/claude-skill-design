@@ -47,7 +47,7 @@ Open the shortlisted images and look at them before choosing: the subject, the l
 
 ## Credits
 
-Credit every photograph on the page itself, with its title, author, source and licence, each linked: title to the source page, licence to its deed. A credits section in the footer, or a credits page linked from the footer, is enough for a page with several. When the page changes the image beyond a crop (a grade, a duotone, a mask), the credit says "adapted from". A CC BY-SA photograph that was changed stays under CC BY-SA; the rest of the page does not.
+Credit every photograph on the page itself, with its title, author, source and licence, each linked: title to the source page, licence to its deed. A credits section in the footer, or a credits page linked from the footer, is enough for a page with several. When the page changes the image (a crop, a grade, a duotone, a mask), the credit ends with "adapted"; scaling alone is not a change. A CC BY-SA photograph that was changed stays under CC BY-SA; the rest of the page does not.
 
 ```
 Photographs: "<title>" by <author>, <source>, <licence>[, adapted]; ...
