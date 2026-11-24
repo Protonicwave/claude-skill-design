@@ -39,7 +39,9 @@ Depth:        how surfaces separate (tone steps, hairlines, shadows), where the 
 Motion:       the tier (product or brand), the signature moment, its lead element and the
               movement of the subject it shows, the complete frame it opens on, what else
               moves and for how long, and what deliberately does not
-Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
+Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line;
+              for photography nobody supplied, the archive photographs to look for
+              (`references/photographs.md`)
 Copy:         the headline and primary action, written for this audience; the action's name,
               kept from button to confirmation; each fact the page needs that was not supplied,
               and how the copy handles it
@@ -172,6 +174,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/slop-tells.md`: the catalogue of generic tells, why they appear and what to do instead.
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
+- `references/photographs.md`: finding, placing and crediting openly licensed archive photographs when none were supplied.
 - `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 - `scripts/check_phone.py`: measures how far the page runs past a 375 px screen, names the elements responsible and checks the viewport tag, used in step 5.
