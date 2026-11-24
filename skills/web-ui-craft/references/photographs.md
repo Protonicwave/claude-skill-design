@@ -55,7 +55,7 @@ Photographs: "<title>" by <author>, <source>, <licence>[, adapted]; ...
 
 ## When nothing usable comes back
 
-No archive reachable, every result too small, every licence unconfirmed, or nothing on the subject after six searches: build the hero in code with `references/artefacts.md`, and say in the report which searches ran and why nothing was used. A weak photograph is worse than a strong drawing.
+No archive reachable, every result too small, every licence unconfirmed, or nothing on the subject after six searches: make the hero by the next route in `references/artefacts.md`, and say in the report which searches ran and why nothing was used. A weak photograph is worse than a strong drawing.
 
 ## Report
 
