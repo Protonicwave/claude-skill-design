@@ -81,6 +81,7 @@ builds/<id>/    one page per build; <id> is <subject>-<arm>-<run>
 captures/<id>/  capture.py output for that build
 briefs/ blind/ verdicts/ vote.html key.json   written by pairs.py
 votes.json      exported from vote.html
+usage.json      each builder's reported cost, written by hand (optional)
 results.md      written by score.py
 ```
 
@@ -98,7 +99,9 @@ results.md      written by score.py
 5. Pair: `uv run python bench/pairs.py bench/runs/<round>`. It pairs run i of each arm with run i of every other arm within a subject, copies each build's judged images under a random token, and writes a judge brief per pair and order. A phone whole-page image taller than 2,600 px reaches judges as tiles of that height, since a taller image is shrunk before they see it. `--votes N` sets how many pairs go on the vote page (default 10). It refuses a round that already has `key.json`, since re-pairing would orphan its verdicts.
 6. Judge: give each file in `briefs/` verbatim as the prompt of one fresh subagent. Each writes `verdicts/<pair>-<order>.json`. Judges see the subject and images only, never code, arm names or builder briefs.
 7. Vote: open `vote.html`, choose a page or a tie for each pair, export, and save `votes.json` in the round folder.
-8. Score: `uv run python bench/score.py bench/runs/<round>` writes `results.md`: judge tallies per arm pair and criterion, where a choice counts only when both orders agree; agreement between judges and votes; and each build's function checks.
+8. Score: `uv run python bench/score.py bench/runs/<round>` writes `results.md`: judge tallies per arm pair and criterion, where a choice counts only when both orders agree; agreement between judges and votes; and each build's function checks, and its cost when `usage.json` exists.
+
+   Record cost as each builder replies, from its completion notice, keyed by build id: `{"profiler-bare-1": {"tokens": 81234, "tool_uses": 37, "duration_ms": 212000}}`. Each figure is a positive integer. A build left out reads "not recorded" and is left out of its arm's median. Pairing never reads `usage.json`, so it can be written at any point before scoring.
 
 Builder brief, one per build, with the subject's prompt pasted at the end:
 
