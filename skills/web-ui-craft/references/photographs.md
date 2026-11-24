@@ -41,7 +41,7 @@ Open the shortlisted images and look at them before choosing: the subject, the l
 ## Into the build
 
 - **Download, never hotlink.** Save each file into the build's own folder (for example `img/`) with a name that says what it shows, and point the markup there. A hotlinked image can vanish, change or track visitors.
-- **Size for the slot.** Download the scaled copy, not the original: about 1,920 px wide for a full-width image and half that for a supporting one, with a second copy near 800 px for phones in `srcset`. Set `width` and `height`, give the first-screen image `fetchpriority="high"`, and lazy-load the rest.
+- **Size for the slot.** Serve about 1,920 px wide for a full-width image and half that for a supporting one, with a second copy near 800 px for phones in `srcset`. From Commons, repeat the search with `iiurlwidth=960` for the smaller copy and use the `thumburl` it returns: a thumbnail address edited to another width may be refused. Openverse gives only the original, so download it and make both copies locally; without an image tool, choose a Commons photograph instead. Set `width` and `height`, give the first-screen image `fetchpriority="high"`, and lazy-load the rest.
 - **One treatment** for the whole set, as `references/visual-system.md` describes, drawn from the palette: a grade, a duotone, a shared crop ratio or grain. Archive photographs come from different cameras and years, and the treatment is what makes them one set.
 - **Alt text written new** for this page. The archive's title describes the photographer's day, not what the image does here.
 
