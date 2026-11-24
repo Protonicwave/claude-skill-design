@@ -1,17 +1,13 @@
 ---
 name: web-ui-craft
-description: Design and build web interfaces that look deliberate rather than generated. Use whenever creating, restyling or editing a website, landing page, web app screen, dashboard, component, HTML or CSS page, or React, Vue or Svelte UI, and whenever the user asks for something beautiful, polished, distinctive, modern or not AI-looking, or wants an existing page bolder, quieter, simpler or hardened. Forces a written design brief derived from the subject, applies evidence-based defaults for type, colour, spacing, depth, motion, navigation, states, performance and accessibility, and ends with a critique pass that removes generic AI tells.
+description: Design and build web interfaces that look deliberate rather than generated. Use whenever creating or restyling a website, landing page, web app screen, dashboard, component, HTML or CSS page, or React, Vue or Svelte UI, and whenever the user asks for something beautiful, polished, distinctive, modern or not AI-looking. Forces a written design brief derived from the subject, applies evidence-based defaults for type, colour, spacing, depth, motion, navigation, states, performance and accessibility, and ends with a critique pass that removes generic AI tells.
 ---
 
 # Web UI craft
 
 Generic UI is not a style. It is what fills every decision nobody made: the model, the template or the framework supplies its most common answer, and the result could belong to any product. The best-looking sites (Linear, Vercel, Stripe, Family, the Awwwards winners) leave almost nothing to default. They compute a small system, commit to one idea, and hold functional details to measurable standards.
 
-So the job is to make decisions, write them down, and trace each one to the subject, the user or the physics of perception. For a new page or a restyle, follow the five steps below in order. Scale them to the task: a single button gets a sentence of brief and a quick critique, a landing page gets the full treatment.
-
-## Editing a page that exists
-
-When the page exists and keeps its identity, and the request is to change one part of it, or to make it or a part of it bolder, quieter, simpler, polished or hardened, read `references/edits.md`. It says when its short path applies in place of the five steps, and gives a playbook for each move and the checks an edit needs. On that path, read no other reference unless it sends you there. A new page, a new direction or a restyle takes the five steps.
+So the job is to make decisions, write them down, and trace each one to the subject, the user or the physics of perception. Follow the five steps below in order. Scale them to the task: a single button gets a sentence of brief and a quick critique, a landing page gets the full treatment.
 
 ## 1. Read the subject
 
@@ -180,7 +176,6 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
 - `references/photographs.md`: finding, placing and crediting openly licensed archive photographs when none were supplied.
-- `references/edits.md`: the short path for changing part of an existing page: bolder, quieter, simpler, polish and harden.
 - `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 - `scripts/check_phone.py`: measures how far the page runs past a 375 px screen, names the elements responsible and checks the viewport tag, used in step 5.
