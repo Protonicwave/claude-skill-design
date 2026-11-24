@@ -65,3 +65,12 @@ Three rules removed the collision, and the edit path still lost. The edit became
 ### Inferences
 - The playbook's limits cost it here. "One decisive change" and the line against extra accents steer away from giving the headline an accent the page already owns, which is the change both judges preferred.
 - Over three builds the edit path cost 83,065 tokens on average against 84,807 for the earlier skill's two. The short path is not cheaper for this move.
+
+## 5. Outcome
+
+### Takeaway
+The edit path was removed. The skill scales its five steps down for an edit, as it did before.
+
+### Findings
+- Commits 8ef348f and 1db83c6 were reverted with the user's agreement, after two failed checks and no measured saving.
+- Only bolder was tested, on two pages, so this is no evidence about the other four moves.

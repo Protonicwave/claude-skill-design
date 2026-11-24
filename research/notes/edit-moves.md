@@ -1,6 +1,6 @@
 # Named moves for editing an existing page
 
-Scope note: gathered on 24 November 2026 for the rule in `skills/web-ui-craft/references/edits.md`. The idea of one small playbook per named move, pointed at one target, comes from Impeccable (github.com/pbakaus/impeccable, Apache-2.0), read at commit b49177d; it is restated here in our own words, and no text is copied into the skill. Quotations below are its words, for the record.
+Scope note: gathered on 24 November 2026 for a short edit path that was built, tested and removed (`bench-edit-check.md`); its playbook, `references/edits.md`, is in the history at 1db83c6. The idea of one small playbook per named move, pointed at one target, comes from Impeccable (github.com/pbakaus/impeccable, Apache-2.0), read at commit b49177d; it is restated here in our own words, and no text is copied into the skill. Quotations below are its words, for the record.
 
 ## Q1. How does Impeccable shape an edit?
 
