@@ -18,6 +18,7 @@ Before any visual choice, establish:
 - **Primary job**: the one thing the page or screen must get done. Everything else is subordinate to it.
 - **Page or tool**: whether the page tells people about something, or is the tool they work in (a dashboard, console, queue or admin screen). For a tool, read `references/app-screens.md` before the brief: it changes what the Signature, Copy and Motion lines mean.
 - **Existing constraints**: brand assets, an existing design system, tokens, component library or framework in the repository. If tokens exist, use them and apply this skill within them. Do not impose a new identity on an established product unless asked.
+- **Past corrections**: read DESIGN.md at the project root, if there is one. A correction recorded there is the user's decision: it outranks this skill's defaults, the tests in step 3 and whatever the subject suggests, and only a newer request from the user outranks it. Where it contradicts the subject, follow it and say so in the brief.
 
 If the user gave little to go on, infer from the subject and state your assumptions in the brief rather than asking a list of questions.
 
@@ -139,9 +140,28 @@ Phone:        pass, or the overflow left and why
 Screenshots:  the widths and colour schemes looked at
 Lighthouse:   LCP, CLS, total blocking time and script KiB against budget, or what stopped it
 Reference:    the site, the largest gap and what was done about it
+Corrections:  each entry in DESIGN.md that applied and where the page shows it, or none recorded
 Placeholders: each fact left for the user to supply, and each assumption to confirm
 Unverified:   anything else not checked, such as rendered contrast without a browser
 ```
+
+## When the user corrects the design
+
+A correction that stays in the conversation is lost, and the next session makes the same choice again. So when the user rejects, reverses or hand-edits a design choice, make the change, then record it in DESIGN.md at the project root in the same turn, and name the entry in the reply. Create the file with the first correction, not before. Keep everything in it that is not an entry of yours.
+
+```
+## Corrections
+
+- **Form labels always sit above their field, never inside it as a placeholder.**
+  Why: "people forget what the box was for once they type".
+  Said: 2026-11-24, "put the names back above the boxes"
+```
+
+- **Record taste, not tasks.** An entry is for a choice a fresh session would get wrong again elsewhere in this project. Leave out faults in the code, content for one screen and requests you misread. After several nudges, record where the user ended up, not the steps.
+- **Only what the user expressed.** Never add a rule because it seems good practice.
+- **Name the class of thing.** The narrowest rule that prevents the next mistake: every form field, not this one sign-up box, and not every label on the page. Use a value or a token, with "always" or "never", unless the user put it as a preference. Write it for a reader who was not here.
+- **The reason is theirs.** Quote it. When they gave none, write `Why (inferred):` with your best reading and ask them to confirm it in the reply.
+- **One entry per decision.** A repeat means the entry was too loose: tighten it. A newer correction that contradicts an entry replaces it.
 
 ## Build sheet
 

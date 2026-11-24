@@ -10,6 +10,8 @@ Makes Claude design web UI the way acclaimed sites are built rather than filling
 
 Most of the effort goes into one hero piece built in code to a fidelity checklist: a product screen with believable data, or a lit object, often playing a short loop of itself. Motion is set by site tier, product or brand. The critique measures the page with Lighthouse rather than estimating it, and holds a screenshot of the build beside one acclaimed site in the same direction.
 
+When you correct a design choice, the skill records the correction and its reason in `DESIGN.md` at your project's root, and reads that file before its next design there.
+
 - `skills/web-ui-craft/SKILL.md`: the process and the build sheet.
 - `skills/web-ui-craft/references/`: detail loaded on demand.
 - `skills/web-ui-craft/scripts/check_slop.py`: static scan for craft defects and generic tells.
