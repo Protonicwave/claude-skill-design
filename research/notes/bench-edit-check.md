@@ -5,7 +5,7 @@ Scope note: run on 24 November 2026. Two round-five web-ui-craft pages, `restaur
 ## 1. Result
 
 ### Takeaway
-The edit path fails the check. It beat the earlier skill on the profiler page at a lower cost, and lost to it on the restaurant page at a higher cost.
+The edit path fails the check, and a rerun after a fix (section 4) fails too. It beat the earlier skill on the profiler page at a lower cost, and lost to it on the restaurant page at a higher cost.
 
 ### Findings
 - The pass rule, written before any build: on both pages the edit path costs fewer tokens, loses neither overall nor first screen, and leaves everything outside the hero unchanged.
@@ -47,3 +47,21 @@ The comparison measures the path against a skill that already shortened itself, 
 - One build per page and arm, one move of the five, and one model for each role: builders on Sonnet, judges on Opus, both at medium effort. Quieter, simpler, polish and harden are untested.
 - Judges saw the original prompt, not the request, so they chose the better page rather than the bolder one. Whether each edit was bolder than its unedited page is the author's look, not blind: all four were, the restaurant edit path most.
 - Judges were pointed at their brief files rather than given them verbatim.
+
+## 4. The rerun on restaurant
+
+### Takeaway
+Three rules removed the collision, and the edit path still lost. The edit became timid, where the other arm used colour the page already owned.
+
+### Findings
+- Commit 1db83c6 keeps larger type clear of the hero piece, inside the content edge and broken by sense, and keeps the piece's first-screen content on screen. One new edit-path build was paired with the same earlier-skill build, and one judge took each order. Run data is in `bench/runs/edit-check-2/`.
+- The cost clause was loosened after the first result, with the user's approval: costs within 10% tie. The rerun cost 85,057 tokens against 77,153, 10.2% more, so it fails that clause by a hair, and it fails the original clause too.
+- Judges, both orders: overall, first screen, type and fit to the earlier skill. Whole page, motion and imagery tied; imagery because one order chose the earlier skill.
+- The whole edit was one token and a letter-spacing value. The headline kept clear of the pour but crowded the fold, where the table and pause label are cut, and on the phone it still breaks across its two clauses, which the rule forbids. That page had the same phone break before the edit.
+- Judges credited the earlier skill for setting "poured from height." in the cider gold of the button and pour, and for breaking the headline by clause.
+- Scope: as in section 1, with 21 pixels differing in the bar section at 1,440 px and none at 375 px. Function: the same faults, only `og:image` missing.
+- The two judges cost 204,500 tokens, so the check cost about 1.03 million in all: 418,807 for five builds and 609,874 for six judges.
+
+### Inferences
+- The playbook's limits cost it here. "One decisive change" and the line against extra accents steer away from giving the headline an accent the page already owns, which is the change both judges preferred.
+- Over three builds the edit path cost 83,065 tokens on average against 84,807 for the earlier skill's two. The short path is not cheaper for this move.
