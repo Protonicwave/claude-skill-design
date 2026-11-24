@@ -148,7 +148,7 @@ Unverified:   anything else not checked, such as rendered contrast without a bro
 
 ## When the user corrects the design
 
-A correction that stays in the conversation is lost, and the next session makes the same choice again. So when the user rejects, reverses or hand-edits a design choice, make the change, then record it in DESIGN.md at the project root in the same turn, and name the entry in the reply. Create the file with the first correction, not before. Keep everything in it that is not an entry of yours.
+A correction that stays in the conversation is lost, and the next session makes the same choice again. So when the user rejects, reverses or hand-edits a design choice, make the change if it is not made already, then record it in DESIGN.md at the project root in the same turn, and name the entry in the reply. Create the file with the first correction, not before. Keep everything in it that is not an entry of yours.
 
 ```
 ## Corrections
@@ -161,6 +161,7 @@ A correction that stays in the conversation is lost, and the next session makes 
 - **Record taste, not tasks.** An entry is for a choice a fresh session would get wrong again elsewhere in this project. Leave out faults in the code, content for one screen and requests you misread. After several nudges, record where the user ended up, not the steps.
 - **Only what the user expressed.** Never add a rule because it seems good practice.
 - **Name the class of thing.** The narrowest rule that prevents the next mistake: every form field, not this one sign-up box, and not every label on the page. Use a value or a token, with "always" or "never", unless the user put it as a preference. Write it for a reader who was not here.
+- **A hand-edit counts as expressed.** The change is already made, so keep it. In place of `Said:`, write `Changed:` with the date and the value before and after, such as `Changed: 2026-11-24, border-radius 8px to 0`.
 - **The reason is theirs.** Quote it. When they gave none, write `Why (inferred):` with your best reading and ask them to confirm it in the reply.
 - **One entry per decision.** A repeat means the entry was too loose: tighten it. A newer correction that contradicts an entry replaces it.
 
