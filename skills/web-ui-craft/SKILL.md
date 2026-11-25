@@ -18,6 +18,7 @@ Before any visual choice, establish:
 - **Primary job**: the one thing the page or screen must get done. Everything else is subordinate to it.
 - **Page or tool**: whether the page tells people about something, or is the tool they work in (a dashboard, console, queue or admin screen). For a tool, read `references/app-screens.md` before the brief: it changes what the Signature, Copy and Motion lines mean.
 - **Existing constraints**: brand assets, an existing design system, tokens, component library or framework in the repository. If tokens exist, use them and apply this skill within them. Do not impose a new identity on an established product unless asked.
+- **Past corrections**: read DESIGN.md at the project root, if there is one. A correction recorded there is the user's decision: it outranks this skill's defaults, the tests in step 3 and whatever the subject suggests, and only a newer request from the user outranks it. Where it contradicts the subject, follow it and say so in the brief.
 
 If the user gave little to go on, infer from the subject and state your assumptions in the brief rather than asking a list of questions.
 
@@ -28,7 +29,8 @@ Write a compact brief in your response before writing code. It is the design, so
 ```
 Direction:    a named aesthetic and why it fits this subject (one or two lines)
 Signature:    the one idea this page is remembered for, the hero piece that carries it, and how
-              that piece will be made (supplied assets, a generated image, or built in code)
+              that piece will be made (supplied assets, archive photographs, a generated image,
+              or built in code)
 Palette:      neutral (tinted toward ...), one accent (role), semantic colours; OKLCH values
 Type:         family and role for each (display, text, mono if needed) and what each shares with
               the subject; how the display type acts in the composition; scale ratio; body size
@@ -39,7 +41,9 @@ Depth:        how surfaces separate (tone steps, hairlines, shadows), where the 
 Motion:       the tier (product or brand), the signature moment, its lead element and the
               movement of the subject it shows, the complete frame it opens on, what else
               moves and for how long, and what deliberately does not
-Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line
+Imagery:      photography, illustration, 3D, product UI or type-only; art direction in one line;
+              for photography nobody supplied, the archive photographs to look for
+              (`references/photographs.md`)
 Copy:         the headline and primary action, written for this audience; the action's name,
               kept from button to confirmation; each fact the page needs that was not supplied,
               and how the copy handles it
@@ -53,6 +57,7 @@ Rules for the brief:
 - **One signature, everything else quiet.** Stripe has its gradient wave, Apple its scroll-scrubbed product shots, Family its flying trays. Spend boldness once. Restraint around it is what makes it read.
 - **Restraint is a valid direction.** A calm, type-led, monochrome system with one accent is as deliberate as a WebGL hero, and usually the right call for tools and documentation.
 - **Quiet is not bare.** Restraint limits how many ideas a page has, not how rich each one is. The signature should reward a long look: an illustration drawn for this subject, real data set out with care, texture, type at true display scale. Food, culture, consumer and brand subjects usually need imagery or illustration to carry warmth, so a type-only page for one of them needs a stated reason.
+- **Real photographs first for food, place and culture.** When the subject is a restaurant, a place, an event or a cause tied to somewhere real, and nobody supplied images, search the open archives with `references/photographs.md` before drawing anything. A drawn or code-built hero replaces photographs only when that search finds no photograph that may lead the page (`references/photographs.md` says which may) or the brief rules photographs out; say which in the brief. Photographs that may only support still go further down the page. An instruction against external images forbids loading images from another host, not saving credited photographs into the build.
 - **The hero piece is where the effort goes.** Acclaimed sites break plenty of rules and still look expensive because one piece is made to a very high standard: a product screen with believable data, a lit object, an owned illustration. Choose and build it with `references/artefacts.md`. A rounded box with grey bars in it is not a product shot.
 - **Type is part of the composition, not a carrier for it.** At display size the setting is the design: scale against the smallest text on the page, weight, width, case, where the lines break, what the headline sits against. Linear's 64 px headline over 12 px interface text is a large part of its effect.
 - **Compare layouts before choosing one.** Sketch two or three genuinely different first screens (not one layout with the image moved) and pick by the subject's primary job. The first layout that comes to mind is usually the template.
@@ -136,9 +141,29 @@ Phone:        pass, or the overflow left and why
 Screenshots:  the widths and colour schemes looked at
 Lighthouse:   LCP, CLS, total blocking time and script KiB against budget, or what stopped it
 Reference:    the site, the largest gap and what was done about it
+Corrections:  each entry in DESIGN.md that applied and where the page shows it, or none recorded
 Placeholders: each fact left for the user to supply, and each assumption to confirm
 Unverified:   anything else not checked, such as rendered contrast without a browser
 ```
+
+## When the user corrects the design
+
+A correction that stays in the conversation is lost, and the next session makes the same choice again. So when the user rejects, reverses or hand-edits a design choice, make the change if it is not made already, then record it in DESIGN.md at the project root in the same turn, and name the entry in the reply. Create the file with the first correction, not before. Keep everything in it that is not an entry of yours.
+
+```
+## Corrections
+
+- **Form labels always sit above their field, never inside it as a placeholder.**
+  Why: "people forget what the box was for once they type".
+  Said: 2026-11-24, "put the names back above the boxes"
+```
+
+- **Record taste, not tasks.** An entry is for a choice a fresh session would get wrong again elsewhere in this project. Leave out faults in the code, content for one screen and requests you misread. After several nudges, record where the user ended up, not the steps.
+- **Only what the user expressed.** Never add a rule because it seems good practice.
+- **Name the class of thing.** The narrowest rule that prevents the next mistake: every form field, not this one sign-up box, and not every label on the page. Use a value or a token, with "always" or "never", unless the user put it as a preference. Write it for a reader who was not here.
+- **A hand-edit counts as expressed.** The change is already made, so keep it. In place of `Said:`, write `Changed:` with the date and the value before and after, such as `Changed: 2026-11-24, border-radius 8px to 0`.
+- **The reason is theirs.** Quote it. When they gave none, write `Why (inferred):` with your best reading and ask them to confirm it in the reply.
+- **One entry per decision.** A repeat means the entry was too loose: tighten it. A newer correction that contradicts an entry replaces it.
 
 ## Build sheet
 
@@ -172,6 +197,7 @@ Well-sourced starting values. They protect good decisions; they do not replace t
 - `references/slop-tells.md`: the catalogue of generic tells, why they appear and what to do instead.
 - `references/exemplars.md`: aesthetic directions and what to learn from specific acclaimed sites.
 - `references/artefacts.md`: choosing and building the hero piece, light as a material, and the fidelity checklist.
+- `references/photographs.md`: finding, placing and crediting openly licensed archive photographs when none were supplied.
 - `references/app-screens.md`: dashboards, consoles and queues: listing what was asked for, actions that name their object, map and chart labels, live state.
 - `scripts/check_slop.py`: static scan for craft defects and generic tells, used in step 5.
 - `scripts/check_phone.py`: measures how far the page runs past a 375 px screen, names the elements responsible and checks the viewport tag, used in step 5.

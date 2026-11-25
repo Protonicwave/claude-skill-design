@@ -17,7 +17,7 @@ Pick by what the subject's world looks like, then name the piece in the brief's 
 | Culture, editorial, place | Photography with one treatment, or type set as the image | Mercury, editorial sites |
 | A brand whose site is the experience | One real-time or scroll-driven scene | Lando Norris, Igloo Inc |
 
-Where real assets exist (product screenshots, photographs, renders, a brand illustration library), use them and give them one treatment. Where the session has an image-generation tool, it can supply photography or texture, art-directed in one sentence (light, lens, palette, mood) taken from the brief; check each image for broken hands, text and geometry, and never use one for product UI, real people or anything presented as evidence. Where neither exists, build the piece in code. Never ship an empty frame, a grey placeholder rectangle or a stock-looking stand-in.
+Where real assets exist (product screenshots, photographs, renders, a brand illustration library), use them and give them one treatment. Where the piece is photography and none was supplied, find openly licensed photographs of the subject's place and world with `references/photographs.md` before anything else. Where that finds none and the session has an image-generation tool, it can supply photography or texture, art-directed in one sentence (light, lens, palette, mood) taken from the brief; check each image for broken hands, text and geometry, and never use one for product UI, real people or anything presented as evidence. Where none of these gives the piece, build it in code. Never ship an empty frame, a grey placeholder rectangle or a stock-looking stand-in.
 
 ## Product interfaces
 

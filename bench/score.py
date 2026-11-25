@@ -15,14 +15,21 @@ Console errors leave out Chrome's "Failed to load resource" lines, since each
 repeats a failed request that is counted on its own. Chrome's automatic favicon
 request appears only as such a line, so a missing favicon is not counted.
 
-Exit code 2 means nothing was written: key.json is missing, a verdict or
-votes.json is malformed, or a function.json is missing or malformed. The
+An optional usage.json maps a build id, <subject>-<arm>-<run>, to the
+"tokens", "tool_uses" and "duration_ms" its builder reported, each a positive
+integer. results.md then lists each build's cost and the median per subject
+and arm; a build absent from the file reads "not recorded" and is left out of
+the median.
+
+Exit code 2 means nothing was written: key.json is missing, a verdict, votes.json
+or usage.json is malformed, or a function.json is missing or malformed. The
 message names the file.
 """
 
 from __future__ import annotations
 
 import argparse
+import statistics
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -41,6 +48,11 @@ Verdict = dict[str, Choice]
 Winners = dict[str, str | None]
 # Per voted pair, the token of the build the user chose, or None for a tie.
 Votes = dict[str, str | None]
+# Per build id, the cost its builder reported, by field.
+Usage = dict[str, dict[str, int]]
+
+USAGE_FIELDS = ("tokens", "tool_uses", "duration_ms")
+NOT_RECORDED = "not recorded"
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,6 +185,34 @@ def read_votes(path: Path, key: Key) -> Votes | None:
     return votes
 
 
+def build_id(build: Build) -> str:
+    return f"{build.subject}-{build.arm}-{build.run}"
+
+
+def read_usage(path: Path, key: Key) -> Usage | None:
+    """Per build id, the builder's reported cost, or None without usage.json."""
+    if not path.exists():
+        return None
+    raw = read_json(path)
+    if not isinstance(raw, dict):
+        raise RoundError(f"{path}: expected an object of build id to cost")
+    known = {build_id(build) for build in key.builds.values()}
+    for build, cost in raw.items():
+        if build not in known:
+            raise RoundError(f"{path}: {build!r} is not a build in this round")
+        if not isinstance(cost, dict):
+            raise RoundError(
+                f"{path}: expected {build!r} as an object of {', '.join(USAGE_FIELDS)}"
+            )
+        for field in sorted(set(cost) - set(USAGE_FIELDS)):
+            raise RoundError(f"{path}: {build!r} has the unknown field {field!r}")
+        for field in USAGE_FIELDS:
+            value = cost.get(field)
+            if type(value) is not int or value <= 0:
+                raise RoundError(f"{path}: expected {field!r} as a positive integer in {build!r}")
+    return raw
+
+
 def agreement(judged: Mapping[str, Winners], votes: Mapping[str, str | None]) -> tuple[int, int]:
     """How many voted pairs both orders judged, and on how many of them judge and user agree."""
     compared = [pair_id for pair_id in votes if pair_id in judged]
@@ -193,6 +233,7 @@ class Round:
     judged: dict[str, Winners]
     votes: Votes | None
     functions: dict[str, FunctionSummary]
+    usage: Usage | None
 
     def arm(self, token: str) -> str:
         return self.key.builds[token].arm
@@ -231,7 +272,14 @@ def read_round(round_dir: Path) -> Round:
         token: read_function(round_dir / build.capture / "function.json")
         for token, build in key.builds.items()
     }
-    return Round(key, verdicts, judged, read_votes(round_dir / "votes.json", key), functions)
+    return Round(
+        key,
+        verdicts,
+        judged,
+        read_votes(round_dir / "votes.json", key),
+        functions,
+        read_usage(round_dir / "usage.json", key),
+    )
 
 
 def _judge_section(scored: Round) -> list[str]:
@@ -368,6 +416,68 @@ def _function_section(scored: Round) -> list[str]:
     ]
 
 
+def _median(values: Sequence[int]) -> str:
+    if not values:
+        return NOT_RECORDED
+    middle = statistics.median(values)
+    return f"{int(middle):,}" if middle == int(middle) else f"{middle:,.1f}"
+
+
+def _cost_section(scored: Round) -> list[str]:
+    usage = scored.usage
+    if usage is None:
+        return ["## Cost", "", f"Cost was {NOT_RECORDED}: no usage.json in the round folder."]
+    builds = sorted(
+        scored.key.builds.values(), key=lambda build: (build.subject, build.arm, build.run)
+    )
+    rows = [
+        [
+            build.subject,
+            build.arm,
+            build.run,
+            *(
+                f"{usage[build_id(build)][field]:,}" if build_id(build) in usage else NOT_RECORDED
+                for field in USAGE_FIELDS
+            ),
+        ]
+        for build in builds
+    ]
+    medians = []
+    for subject, arm in sorted({(build.subject, build.arm) for build in builds}):
+        recorded = [
+            usage[build_id(build)]
+            for build in builds
+            if (build.subject, build.arm) == (subject, arm) and build_id(build) in usage
+        ]
+        medians.append(
+            [
+                subject,
+                arm,
+                len(recorded),
+                *(_median([cost[field] for cost in recorded]) for field in USAGE_FIELDS),
+            ]
+        )
+    return [
+        "## Cost",
+        "",
+        "What each builder reported. Each median covers one arm's recorded builds of one subject.",
+        "",
+        *_table(
+            [
+                "Subject",
+                "Arm",
+                "Recorded builds",
+                "Median tokens",
+                "Median tool uses",
+                "Median duration ms",
+            ],
+            medians,
+        ),
+        "",
+        *_table(["Subject", "Arm", "Run", "Tokens", "Tool uses", "Duration ms"], rows),
+    ]
+
+
 def render(round_name: str, scored: Round) -> str:
     dropped = [f"- {line}" for line in scored.key.dropped] or ["None."]
     sections = [
@@ -376,6 +486,7 @@ def render(round_name: str, scored: Round) -> str:
         _vote_section(scored),
         _pairs_section(scored),
         _function_section(scored),
+        _cost_section(scored),
         ["## Dropped pairs", "", *dropped],
     ]
     return "\n\n".join("\n".join(section) for section in sections) + "\n"

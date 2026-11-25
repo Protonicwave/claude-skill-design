@@ -358,3 +358,88 @@ def test_an_arm_named_tie_is_not_counted_as_a_tie(round_dir: Path) -> None:
     assert "| overall | 1 | 0 | 1 |" in text
     assert "| imagery | 0 | 2 | 0 |" in text
     assert "| craft against tie | 1 | 0 | 1 |" in text
+
+
+def write_usage(round_dir: Path, usage: Any) -> Path:
+    path = round_dir / "usage.json"
+    path.write_text(usage if isinstance(usage, str) else json.dumps(usage))
+    return path
+
+
+def figures(tokens: int, tool_uses: int = 10, duration_ms: int = 60000) -> dict[str, int]:
+    return {"tokens": tokens, "tool_uses": tool_uses, "duration_ms": duration_ms}
+
+
+def cost_section(round_dir: Path) -> str:
+    return results(round_dir).split("## Cost")[1].split("\n## ")[0]
+
+
+def add_second_run(round_dir: Path, subject: str, arm: str) -> None:
+    capture = round_dir / "captures" / "t5"
+    capture.mkdir()
+    (capture / "function.json").write_text(json.dumps(function_report()))
+    path = round_dir / "key.json"
+    key = json.loads(path.read_text())
+    key["builds"]["t5"] = asdict(Build(subject, arm, 2, "captures/t5"))
+    path.write_text(json.dumps(key))
+
+
+def test_cost_is_reported_per_build_and_as_a_median_per_subject_and_arm(
+    round_dir: Path,
+) -> None:
+    add_second_run(round_dir, "restaurant", "bare")
+    write_usage(
+        round_dir,
+        {
+            "profiler-bare-1": figures(900_000),
+            "profiler-craft-1": figures(300_000, tool_uses=40),
+            "restaurant-bare-1": figures(100_000, tool_uses=20),
+            "restaurant-bare-2": figures(200_000, tool_uses=21),
+            "restaurant-craft-1": figures(500_000),
+        },
+    )
+    section = cost_section(round_dir)
+    assert "| profiler | craft | 1 | 300,000 | 40 | 60,000 |" in section
+    # Profiler's dearer build leaves restaurant's median alone.
+    assert "| restaurant | bare | 2 | 150,000 | 20.5 | 60,000 |" in section
+
+
+def test_cost_is_not_recorded_without_usage_json(round_dir: Path) -> None:
+    assert "Cost was not recorded" in cost_section(round_dir)
+
+
+def test_builds_missing_from_usage_json_are_marked_and_left_out_of_the_median(
+    round_dir: Path,
+) -> None:
+    add_second_run(round_dir, "restaurant", "bare")
+    write_usage(round_dir, {"restaurant-bare-2": figures(300_000)})
+    section = cost_section(round_dir)
+    assert "| restaurant | craft | 1 | not recorded | not recorded | not recorded |" in section
+    assert "| restaurant | bare | 1 | not recorded | not recorded | not recorded |" in section
+    assert "| restaurant | bare | 1 | 300,000 | 10 | 60,000 |" in section
+    assert "| restaurant | craft | 0 | not recorded | not recorded | not recorded |" in section
+
+
+@pytest.mark.parametrize(
+    ("usage", "named"),
+    [
+        ({"profiler-bare-9": figures(1)}, "profiler-bare-9"),
+        ({"profiler-bare-1": {"tokens": 1, "tool_uses": 1}}, "duration_ms"),
+        ({"profiler-bare-1": figures(1) | {"cost": 1}}, "cost"),
+        ({"profiler-bare-1": figures(0)}, "tokens"),
+        ({"profiler-bare-1": figures(-5)}, "tokens"),
+        ({"profiler-bare-1": figures(1, tool_uses=2.5)}, "tool_uses"),  # type: ignore[arg-type]
+        ({"profiler-bare-1": figures(True)}, "tokens"),
+        ({"profiler-bare-1": [1, 2, 3]}, "profiler-bare-1"),
+        ([1], "object"),
+    ],
+)
+def test_a_malformed_usage_file_exits_2_naming_the_build_or_field(
+    round_dir: Path, capsys: pytest.CaptureFixture[str], usage: Any, named: str
+) -> None:
+    path = write_usage(round_dir, usage)
+    assert main([str(round_dir)]) == 2
+    error = capsys.readouterr().err
+    assert str(path) in error
+    assert named in error
+    assert not (round_dir / "results.md").exists()
